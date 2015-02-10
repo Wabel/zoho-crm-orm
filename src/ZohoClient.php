@@ -59,8 +59,6 @@ class ZohoClient
         // Only XML format is supported for the time being
         $this->format = 'xml';
         $this->zohoRestClient = $zohoRestClient ?: new Client();
-
-        return $this;
     }
 
     /**
@@ -75,10 +73,9 @@ class ZohoClient
      *                           2 - include fields with null values in the response
      *                           version   1 (default) - use earlier API implementation
      *                           2 - use latest API implementation
-     * @param  array    $options Options to add for configurations [optional]
      * @return Response The Response object
      */
-    public function convertLead($module, $leadId, $data, $params = array(), $options = array())
+    public function convertLead($module, $leadId, $data, $params = array())
     {
         $params['leadId'] = $leadId;
         $params['newFormat'] = 1;
@@ -101,10 +98,9 @@ class ZohoClient
      *                           2 - include fields with null values in the response
      *                           version           Integer 1 (default) - use earlier API implementation
      *                           2 - use latest API implementation
-     * @param  array    $options Options to add for configurations [optional]
      * @return Response The Response object
      */
-    public function getCVRecords($module, $name, $params = array(), $options = array())
+    public function getCVRecords($module, $name, $params = array())
     {
         $params['cvName'] = $name;
         $params['newFormat'] = 1;
@@ -148,10 +144,9 @@ class ZohoClient
      *                           2 - include fields with null values in the response
      *                           version   1 (default) - use earlier API implementation
      *                           2 - use latest API implementation
-     * @param  array    $options Options to add for configurations [optional]
      * @return Response The Response object
      */
-    public function getRecordById($module, $id, $params = array(), $options = array())
+    public function getRecordById($module, $id, $params = array())
     {
         $params['id'] = $id;
         if (empty($params['newFormat'])) {
@@ -178,10 +173,9 @@ class ZohoClient
      *                           2 - include fields with null values in the response
      *                           version           Integer	1 (default) - use earlier API implementation
      *                           2 - use latest API implementation
-     * @param  array    $options Options to add for configurations [optional]
      * @return Response The Response object
      */
-    public function getRecords($module, $params = array(), $options = array())
+    public function getRecords($module, $params = array())
     {
         $params['newFormat'] = 1;
 
@@ -205,10 +199,9 @@ class ZohoClient
      *                           2 - include fields with null values in the response
      *                           version           Integer	1 (default) - use earlier API implementation
      *                           2 - use latest API implementation
-     * @param  array    $options Options to add for configurations [optional]
      * @return Response The Response object
      */
-    public function getRelatedRecords($module, $id, $parentModule, $params = array(), $options = array())
+    public function getRelatedRecords($module, $id, $parentModule, $params = array())
     {
         $params["id"] = $id;
         $params["parentModule"] = $parentModule;
@@ -235,7 +228,7 @@ class ZohoClient
      *
      * @return Response The Response object
      */
-    public function searchRecords($module, $searchCondition, $params = array(), $options = array())
+    public function searchRecords($module, $searchCondition, $params = array())
     {
         $params['criteria'] = $searchCondition;
         $params['newFormat'] = 1;
@@ -399,7 +392,7 @@ class ZohoClient
      *
      * @param  string   $module  The module to use
      * @param  string   $command Command to call
-     * @param  string   $params  Options
+     * @param  array    $params  Options
      * @param  array    $data    Data to send [optional]
      * @param  array    $options Options to add for configurations [optional]
      * @return Response
@@ -472,6 +465,7 @@ class ZohoClient
     protected function getRequestContent($additionnal_params, $data, $options)
     {
         $body = null;
+        $params = array();
         $params['authtoken'] = $this->authtoken;
         $params['scope'] = 'crmapi';
 
