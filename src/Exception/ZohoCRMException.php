@@ -39,12 +39,12 @@ class ZohoCRMException extends \Exception
    '4809'  => 'Exceeded storage space limit.',
   );
 
-  function __construct( $code )
-  {
-   if (!array_key_exists($code, self::$errorMessages)) {
-     throw new \Exception( "Unknown Zoho CRM error code: $code" );
-   }
-  
-   parent::__construct(self::$errorMessages[$code], $code );
-  }
+    public function __construct($code)
+    {
+        if (!array_key_exists($code, self::$errorMessages)) {
+            throw new \Exception("Unknown Zoho CRM error code: $code");
+        }
+
+        parent::__construct(self::$errorMessages[$code], $code);
+    }
 }

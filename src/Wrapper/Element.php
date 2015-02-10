@@ -20,8 +20,9 @@ abstract class Element
      */
     public $customs;
 
-    public function __construct($module = "Leads", array $fields = []) {
-        if(!empty($fields)) {
+    public function __construct($module = "Leads", array $fields = [])
+    {
+        if (!empty($fields)) {
             $this->module = $module;
             $this->deserializeXml($this->serializeXml($fields));
         }
@@ -32,46 +33,50 @@ abstract class Element
      * create an object of the xml received based on the entity
      * called
      *
-     * @param string $xmlstr XML string to convert on object
+     * @param  string    $xmlstr XML string to convert on object
      * @throws Exception If xml data could not be parsed
      * @return boolean
      */
-    final public function deserializeXml($xmlstr) 
+    final public function deserializeXml($xmlstr)
     {
-    	try {
-			$element = new \SimpleXMLElement($xmlstr);		
-    	} catch(\Exception $ex) {
-    		return false;
-    	}
-        foreach($element as $name => $value){
+        try {
+            $element = new \SimpleXMLElement($xmlstr);
+        } catch (\Exception $ex) {
+            return false;
+        }
+        foreach ($element as $name => $value) {
             $name = str_replace(" ", "_", $name);
-            if(property_exists(get_class($this), $name)) {
+            if (property_exists(get_class($this), $name)) {
                 $this->$name = stripslashes(urldecode(htmlspecialchars_decode($value)));
-            }
-            else {
+            } else {
                 $this->customs[$name] = $value->__toString();
             }
         }
-		return true;
+
+        return true;
     }
 
     /**
-     * Called during array to xml parsing, create an string 
+     * Called during array to xml parsing, create an string
      * of the xml to send for api based on the request values, for sustitution
      * of specials chars use E prefix instead of % for hexadecimal
      *
-     * @param array $fields Fields to convert
+     * @param  array  $fields Fields to convert
      * @return string
      * @todo Use full SimpleXMLRequest
      */
-    final public function serializeXml(array $fields) 
+    final public function serializeXml(array $fields)
     {
         $output = '<'.$this->module.'>';
         foreach ($fields as $key => $value) {
-            if(empty($value)) continue; // Unnecessary fields
+            if (empty($value)) {
+                continue;
+            } // Unnecessary fields
             $key = str_replace([' ', '$', '%5F', '/'], ['_', 'N36', 'E5F', 'E2F'], $key);
             $output .= '<'.$key.'>'.htmlspecialchars($value).'</'.$key.'>';
-        } $output .= '</'.$this->module.'>';
+        }
+        $output .= '</'.$this->module.'>';
+
         return $output;
     }
 }
