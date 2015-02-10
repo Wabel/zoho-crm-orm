@@ -4,3 +4,4 @@ vendor
 .project
 composer.lock
 .settings/
+phpunit.xml

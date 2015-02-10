@@ -180,6 +180,11 @@ class Response
           $this->parseResponseGetUsers($xml);
       }
 
+      // getModules
+      elseif ($this->method == 'getModules') {
+          $this->parseResponseGetModules($xml);
+      }
+
       // getRecords, getRelatedRecords, getSearchRecords, getRecordById, getCVRecords
       elseif (isset($xml->result->{$this->module})) {
           $this->parseResponseGetRecords($xml);
@@ -257,6 +262,16 @@ class Response
                 $records[(string) $user['id']][$key] = (string) $value;
             }
             $records[(string) $user['id']]['name'] = (string) $user;
+        }
+        $this->records = $records;
+    }
+
+    protected function parseResponseGetModules($xml)
+    {
+        $records = array();
+        foreach ($xml->result->children() as $row) {
+            $no = (string) $row['no'];
+            $records[$no] = (string) $row['pl'];
         }
         $this->records = $records;
     }

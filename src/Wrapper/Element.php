@@ -33,6 +33,8 @@ abstract class Element
      * create an object of the xml received based on the entity
      * called
      *
+     * FIXME: see if we can get rid of this
+     *
      * @param  string    $xmlstr XML string to convert on object
      * @throws Exception If xml data could not be parsed
      * @return boolean
@@ -61,6 +63,8 @@ abstract class Element
      * of the xml to send for api based on the request values, for sustitution
      * of specials chars use E prefix instead of % for hexadecimal
      *
+     * FIXME: see if we can get rid of this
+     *
      * @param  array  $fields Fields to convert
      * @return string
      * @todo Use full SimpleXMLRequest
@@ -78,5 +82,14 @@ abstract class Element
         $output .= '</'.$this->module.'>';
 
         return $output;
+    }
+
+    /**
+     * Returns the module mapping this entity
+     * @return string
+     */
+    public function getModule()
+    {
+        return $this->module;
     }
 }

@@ -1,6 +1,7 @@
 <?php namespace Wabel\Zoho\CRM;
 
-use Guzzle\Http\Client;
+use GuzzleHttp\Client;
+use Wabel\Utils\Zoho\CRM\Exception\ZohoCRMException;
 use Wabel\Zoho\CRM\Request\Response;
 use Wabel\Zoho\CRM\Wrapper\Element;
 
@@ -57,7 +58,7 @@ class ZohoClient
         $this->authtoken = $authtoken;
         // Only XML format is supported for the time being
         $this->format = 'xml';
-        $this->zohoRestClient = $zohoRestClient ?: new Client(self::BASE_URI);
+        $this->zohoRestClient = $zohoRestClient ?: new Client();
 
         return $this;
     }
@@ -65,6 +66,7 @@ class ZohoClient
     /**
      * Implements convertLead API method.
      *
+     * @param  string   $module  The Zoho module to query
      * @param  string   $leadId  Id of the lead
      * @param  array    $data    xmlData represented as an array
      *                           array will be converted into XML before sending the request
@@ -76,12 +78,12 @@ class ZohoClient
      * @param  array    $options Options to add for configurations [optional]
      * @return Response The Response object
      */
-    public function convertLead($leadId, $data, $params = array(), $options = array())
+    public function convertLead($module, $leadId, $data, $params = array(), $options = array())
     {
         $params['leadId'] = $leadId;
         $params['newFormat'] = 1;
 
-        return $this->call('convertLead', $params, $data);
+        return $this->call($module, 'convertLead', $params, $data);
     }
 
     /**
@@ -102,12 +104,12 @@ class ZohoClient
      * @param  array    $options Options to add for configurations [optional]
      * @return Response The Response object
      */
-    public function getCVRecords($name, $params = array(), $options = array())
+    public function getCVRecords($module, $name, $params = array(), $options = array())
     {
         $params['cvName'] = $name;
         $params['newFormat'] = 1;
 
-        return $this->call('getCVRecords', $params);
+        return $this->call($module, 'getCVRecords', $params);
     }
 
     /**
@@ -115,11 +117,11 @@ class ZohoClient
      *
      * @return Response The Response object
      */
-    public function getFields()
+    public function getFields($module)
     {
         $params['newFormat'] = 1;
 
-        return $this->call('getFields', array());
+        return $this->call($module, 'getFields', array());
     }
 
     /**
@@ -129,12 +131,12 @@ class ZohoClient
      *
      * @return Response The Response object
      */
-    public function deleteRecords($id)
+    public function deleteRecords($module, $id)
     {
         $params['id'] = $id;
         $params['newFormat'] = 1;
 
-        return $this->call('deleteRecords', $params);
+        return $this->call($module, 'deleteRecords', $params);
     }
 
     /**
@@ -149,14 +151,14 @@ class ZohoClient
      * @param  array    $options Options to add for configurations [optional]
      * @return Response The Response object
      */
-    public function getRecordById($id, $params = array(), $options = array())
+    public function getRecordById($module, $id, $params = array(), $options = array())
     {
         $params['id'] = $id;
         if (empty($params['newFormat'])) {
             $params['newFormat'] = 2;
         }
 
-        return $this->call('getRecordById', $params);
+        return $this->call($module, 'getRecordById', $params);
     }
 
     /**
@@ -179,11 +181,11 @@ class ZohoClient
      * @param  array    $options Options to add for configurations [optional]
      * @return Response The Response object
      */
-    public function getRecords($params = array(), $options = array())
+    public function getRecords($module, $params = array(), $options = array())
     {
         $params['newFormat'] = 1;
 
-        return $this->call('getRecords', $params);
+        return $this->call($module, 'getRecords', $params);
     }
 
     /**
@@ -206,13 +208,13 @@ class ZohoClient
      * @param  array    $options Options to add for configurations [optional]
      * @return Response The Response object
      */
-    public function getRelatedRecords($id, $parentModule, $params = array(), $options = array())
+    public function getRelatedRecords($module, $id, $parentModule, $params = array(), $options = array())
     {
         $params["id"] = $id;
         $params["parentModule"] = $parentModule;
         $params['newFormat'] = 1;
 
-        return $this->call('getRelatedRecords', $params);
+        return $this->call($module, 'getRelatedRecords', $params);
     }
 
     /**
@@ -233,12 +235,12 @@ class ZohoClient
      *
      * @return Response The Response object
      */
-    public function searchRecords($searchCondition, $params = array(), $options = array())
+    public function searchRecords($module, $searchCondition, $params = array(), $options = array())
     {
         $params['criteria'] = $searchCondition;
         $params['newFormat'] = 1;
 
-        return $this->call('searchRecords', $params);
+        return $this->call($module, 'searchRecords', $params);
     }
 
     /**
@@ -260,7 +262,7 @@ class ZohoClient
         $params['type'] = $type;
         $params['newFormat'] = $newFormat;
 
-        return $this->call('getUsers', $params);
+        return $this->call('Users', 'getUsers', $params);
     }
 
     /**
@@ -287,7 +289,7 @@ class ZohoClient
      * @return Response The Response object
      * @todo Use full SimpleXMLRequest in data to check number easily and set default parameters
      */
-    public function insertRecords($data, $params = array(), $options = array())
+    public function insertRecords($module, $data, $params = array(), $options = array())
     {
         if (!isset($params['duplicateCheck'])) {
             $params['duplicateCheck'] = 2;
@@ -298,7 +300,7 @@ class ZohoClient
         }
         $params['newFormat'] = 1;
 
-        return $this->call('insertRecords', $params, $data, $options);
+        return $this->call($module, 'insertRecords', $params, $data, $options);
     }
 
     /**
@@ -320,7 +322,7 @@ class ZohoClient
      * @return Response The Response object
      * @todo Use full SimpleXMLRequest in data to check number easily and set default parameters
      */
-    public function updateRecords($data, $id = null, $params = array(), $options = array())
+    public function updateRecords($module, $data, $id = null, $params = array(), $options = array())
     {
         if ($id) {
             $params['id'] = $id;
@@ -335,7 +337,7 @@ class ZohoClient
         }
         $params['newFormat'] = 1;
 
-        return $this->call('updateRecords', $params, $data, $options);
+        return $this->call($module, 'updateRecords', $params, $data, $options);
     }
 
     /**
@@ -356,7 +358,7 @@ class ZohoClient
      *
      * @return Response The Response object
      */
-    public function uploadFile($id, $content, $params = array())
+    public function uploadFile($module, $id, $content, $params = array())
     {
         if (empty($id)) {
             throw new \InvalidArgumentException('Record Id is required and cannot be empty.');
@@ -364,7 +366,7 @@ class ZohoClient
         $params['id'] = $id;
         $params['content'] = $content;
 
-        return $this->call('uploadFile', $params);
+        return $this->call($module, 'uploadFile', $params);
     }
 
     /**
@@ -374,90 +376,87 @@ class ZohoClient
      *
      * @return Response The Response object
      */
-    public function downloadFile($id, $params = array())
+    public function downloadFile($module, $id, $params = array())
     {
         if (empty($id)) {
             throw new \InvalidArgumentException('Record Id is required and cannot be empty.');
         }
         $params['id'] = $id;
 
-        return $this->call('downloadFile', $params);
+        return $this->call($module, 'downloadFile', $params);
     }
 
     /**
-     * Get the module
-     *
-     * @return string
+     * Returns a list of modules from Zoho
      */
-    public function getModule()
+    public function getModules()
     {
-        return $this->module;
-    }
-
-    /**
-     * Set the model
-     *
-     * @param string $module Module to use
-     */
-    public function setModule($module)
-    {
-        $this->module = $module;
+        return $this->call('Info', 'getModules', []);
     }
 
     /**
      * Make the call using the client
      *
+     * @param  string   $module  The module to use
      * @param  string   $command Command to call
      * @param  string   $params  Options
      * @param  array    $data    Data to send [optional]
      * @param  array    $options Options to add for configurations [optional]
      * @return Response
      */
-    protected function call($command, $params, $data = array(), $options = array())
+    protected function call($module, $command, $params, $data = array(), $options = array())
     {
-        $uri = $this->getRequestURI($command);
+        $uri = $this->getRequestURI($module, $command);
         $content = $this->getRequestContent($params, $data, $options);
 
-        $request = $this->zohoRestClient->createRequest("POST", $uri, null, $content["body"]);
+        $request = $this->zohoRestClient->createRequest("POST", $uri);
+        $request->getBody()->write($content["body"]);
         $query = $request->getQuery();
         foreach ($content["params"] as $param => $value) {
             $query[$param] = $value;
         }
 
-        $response = $request->send();
-        if ($response->isError()) {
+        $response = $this->zohoRestClient->send($request);
+
+        $zohoResponse =  new Response($response->getBody()->__toString(), $module, $command);
+
+        if ($zohoResponse->ifSuccess()) {
+            return $zohoResponse;
+        } else {
+            throw new ZohoCRMException($zohoResponse->getMessage(), $zohoResponse->getCode());
+        }
+
+        /*if ($response->isError()) {
             return false;
         } else {
             if ($this->format = "xml") {
-                try {
-                    $zohoResponse =  new Response($response->getBody()->__toString(), $this->module, $command);
+                $zohoResponse =  new Response($response->getBody()->__toString(), $module, $command);
 
-                    if ($zohoResponse->ifSuccess()) {
-                        return $zohoResponse;
-                    } else {
-                        return ['code' => $zohoResponse->getCode(), "message" => $zohoResponse->getMessage()];
-                    }
-                } catch (\Exception $e) {
-                    return ['code' => $e->getCode(), "message" => $e->getMessage()."<br><br>".$e->getTraceAsString()];
+                if ($zohoResponse->ifSuccess()) {
+                    return $zohoResponse;
+                } else {
+                    throw new ZohoCRMException($zohoResponse->getMessage(), $zohoResponse->getCode());
                 }
             } elseif ($this->format = "json") {
+                // FIXME: we should remove json support and do only XML.
                 return $response->json();
             }
-        }
+        }*/
     }
 
     /**
      * Get the current request uri
      *
+     * @param  $module The module to use
      * @param  string $command Command for get uri
      * @return string
      */
-    protected function getRequestURI($command)
+    protected function getRequestURI($module, $command)
     {
-        if (empty($this->module)) {
+        if (empty($module)) {
             throw new \RuntimeException('Zoho CRM module is not set.');
         }
-        $parts = array($this->zohoRestClient->getBaseUrl(), $this->format, $this->module, $command);
+        $parts = array(self::BASE_URI, $this->format, $module, $command);
 
         return implode('/', $parts);
     }
@@ -476,25 +475,25 @@ class ZohoClient
         $params['authtoken'] = $this->authtoken;
         $params['scope'] = 'crmapi';
 
-        if ($additionnal_params["newFormat"]) {
+        if (isset($additionnal_params["newFormat"])) {
             $params['newFormat'] = $additionnal_params["newFormat"];
         }
-        if ($additionnal_params["id"]) {
+        if (isset($additionnal_params["id"])) {
             $params['id'] = $additionnal_params["id"];
         }
-        if ($additionnal_params["parentModule"]) {
+        if (isset($additionnal_params["parentModule"])) {
             $params['parentModule'] = $additionnal_params["parentModule"];
         }
-        if ($additionnal_params["criteria"]) {
+        if (isset($additionnal_params["criteria"])) {
             $params['criteria'] = $additionnal_params["criteria"];
         }
-        if ($additionnal_params["selectColumns"]) {
+        if (isset($additionnal_params["selectColumns"])) {
             $params['selectColumns'] = $additionnal_params["selectColumns"];
         }
-        if ($additionnal_params["duplicateCheck"]) {
+        if (isset($additionnal_params["duplicateCheck"])) {
             $params['duplicateCheck'] = $additionnal_params["duplicateCheck"];
         }
-        if ($additionnal_params["version"]) {
+        if (isset($additionnal_params["version"])) {
             $params['version'] = $additionnal_params["version"];
         }
         if (isset($options["postXMLData"]) && $options["postXMLData"]) {
@@ -507,51 +506,6 @@ class ZohoClient
     }
 
     /**
-     * Convert from array to XML
-     *
-     * @param  array $data Data to convert
-     * @return XML
-     */
-    protected function toXML($data)
-    {
-        $root = isset($data['root']) ? $data['root'] : $this->module;
-        $no = 1;
-        $xml = '<'.$root.'>';
-        if (isset($data['options'])) {
-            $xml .= '<row no="'.$no.'">';
-            foreach ($data['options'] as $key => $value) {
-                $xml .= '<option val="'.$key.'">'.$value.'</option>';
-            }
-            $xml .= '</row>';
-            $no++;
-        }
-        foreach ($data['records'] as $row) {
-            $xml .= '<row no="'.$no.'">';
-            foreach ($row as $key => $value) {
-                if (is_array($value)) {
-                    $xml .= '<FL val="'.$key.'">';
-                    foreach ($value as $k => $v) {
-                        list($tag, $attribute) = explode(' ', $k);
-                        $xml .= '<'.$tag.' no="'.$attribute.'">';
-                        foreach ($v as $kk => $vv) {
-                            $xml .= '<FL val="'.$kk.'"><![CDATA['.$vv.']]></FL>';
-                        }
-                        $xml .= '</'.$tag.'>';
-                    }
-                    $xml .= '</FL>';
-                } else {
-                    $xml .= '<FL val="'.$key.'"><![CDATA['.$value.']]></FL>';
-                }
-            }
-            $xml .= '</row>';
-            $no++;
-        }
-        $xml .= '</'.$root.'>';
-
-        return $xml;
-    }
-
-    /**
      * Convert an entity into XML
      *
      * @param  Element $entity Element with values on fields setted
@@ -561,17 +515,17 @@ class ZohoClient
      */
     public function mapEntity(Element $entity, $no = null)
     {
-        if (empty($this->module)) {
-            throw new \Exception("Invalid module, it must be setted before map the entity", 1);
+        if (!$entity->getModule()) {
+            throw new \Exception("Invalid module returned by entity", 1);
         }
         $element = new \ReflectionObject($entity);
         $properties = $element->getProperties();
-        $xml = $no ? '' : '<'.$this->module.'>'."\n";
+        $xml = $no ? '' : '<'.$entity->getModule().'>'."\n";
         $xml .= '<row no="'.($no ? $no : '1').'">'."\n";
         foreach ($properties as $property) {
             $propName = $property->getName();
             $propValue = $entity->$propName;
-            // Avoid the $this->moduele attribute
+
             if (!empty($propValue) && $propName !== "module") {
 
                 // Dealing with the customs zoho attributes
@@ -591,7 +545,7 @@ class ZohoClient
             }
         }
         $xml .= '</row>'."\n";
-        $xml .= $no ? '' :  '</'.$this->module.'>';
+        $xml .= $no ? '' :  '</'.$entity->getModule().'>';
 
         return $xml;
     }
@@ -604,16 +558,18 @@ class ZohoClient
      */
     public function mapEntities(array $entities)
     {
-        if (empty($this->module)) {
-            throw new \Exception("Invalid module, it must be setted before map the entity", 1);
+        if (count($entities) === 0) {
+            throw new ZohoCRMException("mapEntities called with empty array.");
         }
+        $firstEntity = reset($entities);
+        $module = $firstEntity->getModule();
 
         $no = 1;
-        $xml = '<'.$this->module.'>'."\n";
+        $xml = '<'.$module.'>'."\n";
         foreach ($entities as $entity) {
             $xml .= $this->mapEntity($entity, $no++);
         }
-        $xml .= '</'.$this->module.'>';
+        $xml .= '</'.$module.'>';
 
         return $xml;
     }
