@@ -2,17 +2,14 @@
 
 use Guzzle\Http\Client;
 use Wabel\Zoho\CRM\Common\HttpClientInterface;
-use Wabel\Zoho\CRM\Common\FactoryInterface;
 use Wabel\Zoho\CRM\Exception\ZohoCRMException;
 use Wabel\Zoho\CRM\Request\HttpClient;
-use Wabel\Zoho\CRM\Request\Factory;
 use Wabel\Zoho\CRM\Request\Response;
 use Wabel\Zoho\CRM\Wrapper\Element;
 
 /**
  * Client for provide interface with Zoho CRM
  *
- * @package Zoho\CRM
  * TODO : Add comments (a lot)
  */
 class ZohoClient
@@ -39,13 +36,6 @@ class ZohoClient
 	protected $zohoRestClient;
 
 	/**
-	 * Instance of the factory
-	 *
-	 * @var FactoryInterface
-	 */
-	protected $factory;
-
-	/**
 	 * Format selected for get request
 	 *
 	 * @var string
@@ -64,15 +54,13 @@ class ZohoClient
 	 *
 	 * @param string $authtoken Token for connection
 	 * @param Client $zohoRestClient Guzzl Client for connection [optional]
-	 * @param FactoryInterface $factory [optional]
 	 */
-	public function __construct($authtoken, Client $zohoRestClient = null, FactoryInterface $factory = null)
+	public function __construct($authtoken, Client $zohoRestClient = null)
 	{
 		$this->authtoken = $authtoken;
 		// Only XML format is supported for the time being
 		$this->format = 'xml';
 		$this->zohoRestClient = $zohoRestClient ?: new Client(self::BASE_URI);
-		$this->factory = $factory ?: new Factory();
 		return $this;
 	}
 
