@@ -271,7 +271,13 @@ class Response
         $records = array();
         foreach ($xml->result->children() as $row) {
             $no = (string) $row['no'];
-            $records[$no] = (string) $row['pl'];
+            $pl = (string) $row['pl'];
+            $sl = (string) $row['sl'];
+            $records[$no] = array(
+                'key' => (string) $row,
+                'pl' => $pl,
+                'sl' => $sl,
+            );
         }
         $this->records = $records;
     }

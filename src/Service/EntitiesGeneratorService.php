@@ -1,7 +1,13 @@
 <?php
 namespace Wabel\Zoho\CRM\Service;
 
+use gossi\codegen\generator\CodeFileGenerator;
+use gossi\codegen\model\PhpClass;
+use gossi\codegen\model\PhpMethod;
+use gossi\codegen\model\PhpParameter;
+use gossi\codegen\model\PhpProperty;
 use Wabel\Zoho\CRM\ZohoClient;
+use Wabel\Zoho\CRM\Exception\ZohoCRMException;
 
 /**
  * This class is in charge of generating Zoho entities.
@@ -23,179 +29,110 @@ class EntitiesGeneratorService {
     public function generateAll($targetDirectory, $namespace) {
         $modules = $this->zohoClient->getModules();
         foreach ($modules->getRecords() as $module) {
-            $this->generateModule($module, $targetDirectory, $namespace);
+            try {
+                $this->generateModule($module['key'], $module['pl'], $module['sl'], $targetDirectory, $namespace);
+            } catch (ZohoCRMException $e) {
+                error_log("Error thrown when retrieving fields for module ".$module['key'].". Error message: ".$e);
+            }
         }
     }
 
-    public function generateModule($module, $targetDirectory, $namespace) {
-        $fields = $this->zohoClient->getFields($module);
+    public function generateModule($moduleName, $modulePlural, $moduleSingular, $targetDirectory, $namespace) {
+        $fields = $this->zohoClient->getFields($moduleName);
 
-        mkdir($targetDirectory, 0775, true);
+        if (!file_exists($targetDirectory)) {
+            mkdir($targetDirectory, 0775, true);
+        }
+
+        $namespace = trim($namespace, '\\');
+        $className = self::upperCamelCase($moduleSingular);
 
 
-        var_export($fields);exit;
+        if (class_exists($namespace."\\".$className)) {
+            $class = PhpClass::fromReflection(new \ReflectionClass($namespace."\\".$className));
+        } else {
+            $class = PhpClass::create();
+        }
 
-        // TODO: continue here!
-        // TODO: continue here!
-        // TODO: continue here!
-        // TODO: continue here!
-        // Note: use https://github.com/gossi/php-code-generator to quickly generate beans!
+        $class->setName($className)
+            ->setNamespace($namespace)
+            ->setMethod(PhpMethod::create('__construct'));
+
+        foreach ($fields->getRecords() as $fieldCategory) {
+            foreach ($fieldCategory as $name=>$field) {
+                $req = $field['req'];
+                $type = $field['type'];
+                $isreadonly = $field['isreadonly'];
+                $maxlength = $field['maxlength'];
+                $label = $field['label'];
+                $dv = $field['dv'];
+                $customfield = $field['customfield'];
+
+                $phpType = ($type=="DateTime"?"\\DateTime":"string");
+
+                self::registerProperty($class, self::camelCase($name), "Zoho field ".$name."\n".
+                    "Type: ".$type."\n".
+                    "Read only: ".($isreadonly?"true":"false")."\n".
+                    "Max length: ".$maxlength."\n".
+                    "Custom field: ".($customfield?"true":"false")."\n", $phpType);
+            }
+
+        }
+
+        $generator = new CodeFileGenerator();
+        $code = $generator->generate($class);
+
+        file_put_contents(rtrim($targetDirectory,'/').'/'.$className.".php", $code);
+    }
+
+    private static function camelCase($str, array $noStrip = [])
+    {
+        $str = self::upperCamelCase($str, $noStrip);
+        $str = lcfirst($str);
+        return $str;
+    }
+
+    private static function upperCamelCase($str, array $noStrip = [])
+    {
+        // non-alpha and non-numeric characters become spaces
+        $str = preg_replace('/[^a-z0-9' . implode("", $noStrip) . ']+/i', ' ', $str);
+        $str = trim($str);
+        // uppercase the first character of each word
+        $str = ucwords($str);
+        $str = str_replace(" ", "", $str);
+
+        return $str;
+    }
+
+    private static function registerProperty(PhpClass $class, $name, $description, $type) {
+        if (!$class->hasProperty($name)) {
+            $property = PhpProperty::create($name);
+            $property->setDescription($description);
+            $property->setType($type);
+            $property->setVisibility("protected");
+
+            $class->setProperty($property);
+        }
+
+        $getterName = "get".ucfirst($name);
+        $getterDescription = "Get ".lcfirst($description);
+        $setterName = "set".ucfirst($name);
+        $setterDescription = "Set ".lcfirst($description);
+
+        if (!$class->hasMethod($getterName)) {
+            $method = PhpMethod::create($getterName);
+            $method->setDescription($getterDescription);
+            $method->setBody("return \$this->{$name};");
+            $class->setMethod($method);
+        }
+
+        if (!$class->hasMethod($setterName)) {
+            $method = PhpMethod::create($setterName);
+            $method->setDescription($setterDescription);
+            $method->addParameter(PhpParameter::create($name)->setType($type));
+            $method->setBody("\$this->{$name} = ${$name};\n".
+                             "return \$this;");
+            $class->setMethod($method);
+        }
     }
 }
-
-/*
-
-Wabel\Zoho\CRM\Request\Response::__set_state(array(
-   'code' => NULL,
-   'message' => NULL,
-   'method' => 'getFields',
-   'module' => 'Leads',
-   'records' =>
-  array (
-    'Company Information' =>
-    array (
-      'Company' =>
-      array (
-        'req' => false,
-        'type' => 'Text',
-        'isreadonly' => false,
-        'maxlength' => 100,
-        'label' => 'Company',
-        'dv' => 'Company',
-        'customfield' => false,
-      ),
-      'Product' =>
-      array (
-        'req' => false,
-        'type' => 'TextArea',
-        'isreadonly' => false,
-        'maxlength' => 32000,
-        'label' => 'Product',
-        'dv' => 'Product',
-        'customfield' => true,
-      ),
-      'Website' =>
-      array (
-        'req' => false,
-        'type' => 'Website',
-        'isreadonly' => false,
-        'maxlength' => 255,
-        'label' => 'Website',
-        'dv' => 'Website',
-        'customfield' => false,
-      ),
-      'City' =>
-      array (
-        'req' => false,
-        'type' => 'Text',
-        'isreadonly' => false,
-        'maxlength' => 30,
-        'label' => 'City',
-        'dv' => 'City',
-        'customfield' => false,
-      ),
-      'Country' =>
-      array (
-        'req' => false,
-        'type' => 'Text',
-        'isreadonly' => false,
-        'maxlength' => 30,
-        'label' => 'Country',
-        'dv' => 'Country',
-        'customfield' => false,
-      ),
-      'State' =>
-      array (
-        'req' => false,
-        'type' => 'Text',
-        'isreadonly' => false,
-        'maxlength' => 30,
-        'label' => 'State',
-        'dv' => 'Province',
-        'customfield' => false,
-      ),
-      'Street' =>
-      array (
-        'req' => false,
-        'type' => 'Text',
-        'isreadonly' => false,
-        'maxlength' => 250,
-        'label' => 'Street',
-        'dv' => 'Street',
-        'customfield' => false,
-      ),
-      'Zip Code' =>
-      array (
-        'req' => false,
-        'type' => 'Text',
-        'isreadonly' => false,
-        'maxlength' => 30,
-        'label' => 'Zip Code',
-        'dv' => 'Postal Code',
-        'customfield' => false,
-      ),
-      'Phone' =>
-      array (
-        'req' => false,
-        'type' => 'Phone',
-        'isreadonly' => false,
-        'maxlength' => 30,
-        'label' => 'Phone',
-        'dv' => 'Phone',
-        'customfield' => false,
-      ),
-      'No of Employees' =>
-      array (
-        'req' => false,
-        'type' => 'Integer',
-        'isreadonly' => false,
-        'maxlength' => 16,
-        'label' => 'No of Employees',
-        'dv' => 'No of Employees',
-        'customfield' => false,
-      ),
-      'Fax' =>
-      array (
-        'req' => false,
-        'type' => 'Text',
-        'isreadonly' => false,
-        'maxlength' => 30,
-        'label' => 'Fax',
-        'dv' => 'Fax',
-        'customfield' => false,
-      ),
-      'Description' =>
-      array (
-        'req' => false,
-        'type' => 'TextArea',
-        'isreadonly' => false,
-        'maxlength' => 32000,
-        'label' => 'Description',
-        'dv' => 'Description',
-        'customfield' => false,
-      ),
-      'Annual Revenue' =>
-      array (
-        'req' => false,
-        'type' => 'Currency',
-        'isreadonly' => false,
-        'maxlength' => 16,
-        'label' => 'Annual Revenue',
-        'dv' => 'Annual Revenue',
-        'customfield' => false,
-      ),
-      'Buying Office' =>
-      array (
-        'req' => false,
-        'type' => 'Lookup',
-        'isreadonly' => false,
-        'maxlength' => 120,
-        'label' => 'Buying Office',
-        'dv' => 'Buying Office',
-        'customfield' => true,
-      ),
-    ),
-
-
-
- */

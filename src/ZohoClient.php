@@ -1,7 +1,7 @@
 <?php namespace Wabel\Zoho\CRM;
 
 use GuzzleHttp\Client;
-use Wabel\Utils\Zoho\CRM\Exception\ZohoCRMException;
+use Wabel\Zoho\CRM\Exception\ZohoCRMException;
 use Wabel\Zoho\CRM\Request\Response;
 use Wabel\Zoho\CRM\Wrapper\Element;
 

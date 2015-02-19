@@ -14,7 +14,15 @@ class ZohoClientTest extends PHPUnit_Framework_TestCase
 
         $modules = $zohoClient->getModules();
 
-        $this->assertContains('Leads', $modules->getRecords());
+        $found = false;
+        foreach ($modules->getRecords() as $record) {
+            if ($record['pl'] == 'Leads') {
+                $found = true;
+            }
+        }
+
+
+        $this->assertTrue($found);
     }
 
     public function testGetFields()

@@ -42,9 +42,9 @@ class ZohoCRMException extends \Exception
     public function __construct($code)
     {
         if (!array_key_exists($code, self::$errorMessages)) {
-            throw new \Exception("Unknown Zoho CRM error code: $code");
+            parent::__construct("Unknown Zoho CRM error code: '$code'");
+        } else {
+            parent::__construct(self::$errorMessages[$code], $code);
         }
-
-        parent::__construct(self::$errorMessages[$code], $code);
     }
 }
