@@ -196,32 +196,55 @@ abstract class AbstractZohoDao
 
         $results = $this->zohoClient->call($module, 'searchRecords', $params);
 
+
+        // TODO: extract this in a private method.
         $beanClass = $this->getBeanClassName();
         $fields = $this->getFlatFields();
         //var_dump($results);
-        foreach ($fields as $recordArray) {
+
+        $beanArray = array();
+
+        foreach ($results->getRecords() as $record) {
 
             $bean = new $beanClass();
 
             // First, let's fill the ID.
             // The ID is CONTACTID or ACCOUNTID or Id depending on the Zoho type.
-            if (isset($recordArray['CONTACTID'])) {
-                $id = $recordArray['CONTACTID'];
-            } elseif (isset($recordArray['ACCOUNTID'])) {
-                $id = $recordArray['ACCOUNTID'];
+            if (isset($record['CONTACTID'])) {
+                $id = $record['CONTACTID'];
+            } elseif (isset($record['ACCOUNTID'])) {
+                $id = $record['ACCOUNTID'];
             } else {
-                $id = $recordArray['Id'];
+                $id = $record['Id'];
+                // FIXME: RULE FOR ID IS MORE COMPLEX: FOR INSTANCE, WE HAVE A LEADID and not an Id
             }
             $bean->setZohoId($id);
 
-            foreach ($recordArray as $key=>$value) {
+            foreach ($record as $key=>$value) {
                 if (isset($fields[$key])) {
-                    // TODO HERE!
+                    $setter = $fields[$key]['setter'];
+
+                    switch ($fields[$key]['type']) {
+                        case "Date":
+                            $value = \DateTime::createFromFormat('M/d/Y', $value);
+                            break;
+                        case "DateTime":
+                            $value = \DateTime::createFromFormat('Y-m-d H:i:s', $value);
+                            break;
+                        case "Boolean":
+                            $value = ($value == "true");
+                            break;
+                        default:
+                            break;
+                    }
+                    $bean->$setter($value);
+
                 }
             }
 
-
+            $beanArray[] = $bean;
         }
+        return $beanArray;
     }
 
     /**

@@ -70,8 +70,8 @@ class EntitiesGeneratorService {
         // Let's add the ZohoID property
         self::registerProperty($class, "zohoId", "The ID of this record in Zoho\nType: string\n", "string");
 
-        foreach ($fields as $fieldCategory) {
-            foreach ($fieldCategory as $name=>$field) {
+        foreach ($fields as &$fieldCategory) {
+            foreach ($fieldCategory as $name=>&$field) {
                 $req = $field['req'];
                 $type = $field['type'];
                 $isreadonly = $field['isreadonly'];
@@ -80,7 +80,20 @@ class EntitiesGeneratorService {
                 $dv = $field['dv'];
                 $customfield = $field['customfield'];
 
-                $phpType = (($type=="DateTime" || $type=="Date")?"\\DateTime":"string");
+                switch ($type) {
+                    case "DateTime":
+                    case "Date":
+                        $phpType = "\\DateTime";
+                        break;
+                    case "Boolean":
+                        $phpType = "bool";
+                        break;
+                    default:
+                        $phpType = "string";
+                        break;
+                }
+
+                $field['phpType'] = $phpType;
 
                 self::registerProperty($class, self::camelCase($name), "Zoho field ".$name."\n".
                     "Type: ".$type."\n".
@@ -108,12 +121,21 @@ class EntitiesGeneratorService {
             ->setNamespace($namespace)
             ->setParentClassName('\\Wabel\\Zoho\\CRM\\AbstractZohoDao');
 
+        foreach ($fields as $key=>$fieldCategory) {
+            foreach ($fieldCategory as $name=>$field) {
+                $type = $field['type'];
+                $phpType = (($type=="DateTime" || $type=="Date")?"\\DateTime":"string");
+                $fields[$key][$name]['phpType'] = $phpType;
+                $fields[$key][$name]['getter'] = "get".ucfirst(self::camelCase($name));
+                $fields[$key][$name]['setter'] = "set".ucfirst(self::camelCase($name));
+            }
+        }
 
         $class->setMethod(PhpMethod::create('getModule')->setBody('return '.var_export($moduleName, true).';'));
 
         $class->setMethod(PhpMethod::create('getFields')->setBody('return '.var_export($fields, true).';'));
 
-        $class->setMethod(PhpMethod::create('getBeanClassName')->setBody('return '.var_export($className, true).';'));
+        $class->setMethod(PhpMethod::create('getBeanClassName')->setBody('return '.var_export($namespace.'\\'.$className, true).';'));
 
         $generator = new CodeFileGenerator();
         $code = $generator->generate($class);
@@ -141,14 +163,14 @@ class EntitiesGeneratorService {
     }
 
     private static function registerProperty(PhpClass $class, $name, $description, $type) {
-        /*if (!$class->hasProperty($name)) {
+        if (!$class->hasProperty($name)) {
             $property = PhpProperty::create($name);
             $property->setDescription($description);
             $property->setType($type);
             $property->setVisibility("protected");
 
             $class->setProperty($property);
-        }*/
+        }
 
         $getterName = "get".ucfirst($name);
         $getterDescription = "Get ".lcfirst($description);

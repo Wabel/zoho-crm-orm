@@ -41,5 +41,10 @@ class ZohoClientTest extends PHPUnit_Framework_TestCase
         $contactZohoDao = new \TestNamespace\ContactZohoDao($this->getClient());
         $records = $contactZohoDao->searchRecords("(First Name:Tiger)");
 
+        $this->assertNotEmpty($records);
+        foreach ($records as $record) {
+            $this->assertInstanceOf("\\TestNamespace\\Contact", $record);
+            $this->assertEquals("Tiger", $record->getFirstName());
+        }
     }
 }
