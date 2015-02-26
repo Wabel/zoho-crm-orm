@@ -9,7 +9,7 @@ use Wabel\Zoho\CRM\Wrapper\Element;
  * Base class that provides access to Zoho through Zoho beans.
  *
  */
-class AbstractZohoDao
+abstract class AbstractZohoDao
 {
     /**
      * @var ZohoClient
@@ -23,6 +23,21 @@ class AbstractZohoDao
     abstract protected function getModule();
     abstract protected function getBeanClassName();
     abstract protected function getFields();
+
+    protected $flatFields;
+
+    /**
+     * Returns a flat list of all fields.
+     */
+    protected function getFlatFields() {
+        if ($this->flatFields === null) {
+            $this->flatFields = array();
+            foreach ($this->getFields() as $cat) {
+                $this->flatFields = array_merge($this->flatFields, $cat);
+            }
+        }
+        return $this->flatFields;
+    }
 
     /**
      * Implements convertLead API method.
@@ -101,12 +116,13 @@ class AbstractZohoDao
      *                           2 - use latest API implementation
      * @return Response The Response object
      */
-    public function getRecords($module, $params = array())
+    /*public function getRecords($params = array())
     {
+        $module = $this->getModule();
         $params['newFormat'] = 1;
 
         return $this->call($module, 'getRecords', $params);
-    }
+    }*/
 
     /**
      * Implements getRecords API method.
@@ -154,12 +170,58 @@ class AbstractZohoDao
      *
      * @return Response The Response object
      */
-    public function searchRecords($module, $searchCondition, $params = array())
+    public function searchRecords($searchCondition = null, $fromIndex = null, $toIndex = null, \DateTime $lastModifiedTime = null, $selectColumns = null)
     {
-        $params['criteria'] = $searchCondition;
+        $module = $this->getModule();
+        $params = [];
+        if ($searchCondition) {
+            $params['criteria'] = $searchCondition;
+        } else {
+            $params['criteria'] = "";
+        }
+        if ($fromIndex) {
+            $params['fromIndex'] = $fromIndex;
+        }
+        if ($toIndex) {
+            $params['toIndex'] = $toIndex;
+        }
+        if ($lastModifiedTime) {
+            $params['lastModifiedTime'] = $lastModifiedTime->format('Y-m-d H:i:s');
+        }
+        if ($selectColumns) {
+            $params['selectColumns'] = $selectColumns;
+        }
+
         $params['newFormat'] = 1;
 
-        return $this->call($module, 'searchRecords', $params);
+        $results = $this->zohoClient->call($module, 'searchRecords', $params);
+
+        $beanClass = $this->getBeanClassName();
+        $fields = $this->getFlatFields();
+        //var_dump($results);
+        foreach ($fields as $recordArray) {
+
+            $bean = new $beanClass();
+
+            // First, let's fill the ID.
+            // The ID is CONTACTID or ACCOUNTID or Id depending on the Zoho type.
+            if (isset($recordArray['CONTACTID'])) {
+                $id = $recordArray['CONTACTID'];
+            } elseif (isset($recordArray['ACCOUNTID'])) {
+                $id = $recordArray['ACCOUNTID'];
+            } else {
+                $id = $recordArray['Id'];
+            }
+            $bean->setZohoId($id);
+
+            foreach ($recordArray as $key=>$value) {
+                if (isset($fields[$key])) {
+                    // TODO HERE!
+                }
+            }
+
+
+        }
     }
 
     /**
@@ -313,117 +375,6 @@ class AbstractZohoDao
         return $this->call('Info', 'getModules', []);
     }
 
-    /**
-     * Make the call using the client
-     *
-     * @param  string   $module  The module to use
-     * @param  string   $command Command to call
-     * @param  array    $params  Options
-     * @param  array    $data    Data to send [optional]
-     * @param  array    $options Options to add for configurations [optional]
-     * @return Response
-     */
-    protected function call($module, $command, $params, $data = array(), $options = array())
-    {
-        $uri = $this->getRequestURI($module, $command);
-        $content = $this->getRequestContent($params, $data, $options);
-
-        $request = $this->zohoRestClient->createRequest("POST", $uri);
-        $request->getBody()->write($content["body"]);
-        $query = $request->getQuery();
-        foreach ($content["params"] as $param => $value) {
-            $query[$param] = $value;
-        }
-
-        $response = $this->zohoRestClient->send($request);
-
-        $zohoResponse =  new Response($response->getBody()->__toString(), $module, $command);
-
-        if ($zohoResponse->ifSuccess()) {
-            return $zohoResponse;
-        } else {
-            throw new ZohoCRMException($zohoResponse->getMessage(), $zohoResponse->getCode());
-        }
-
-        /*if ($response->isError()) {
-            return false;
-        } else {
-            if ($this->format = "xml") {
-                $zohoResponse =  new Response($response->getBody()->__toString(), $module, $command);
-
-                if ($zohoResponse->ifSuccess()) {
-                    return $zohoResponse;
-                } else {
-                    throw new ZohoCRMException($zohoResponse->getMessage(), $zohoResponse->getCode());
-                }
-            } elseif ($this->format = "json") {
-                // FIXME: we should remove json support and do only XML.
-                return $response->json();
-            }
-        }*/
-    }
-
-    /**
-     * Get the current request uri
-     *
-     * @param  $module The module to use
-     * @param  string $command Command for get uri
-     * @return string
-     */
-    protected function getRequestURI($module, $command)
-    {
-        if (empty($module)) {
-            throw new \RuntimeException('Zoho CRM module is not set.');
-        }
-        $parts = array(self::BASE_URI, $this->format, $module, $command);
-
-        return implode('/', $parts);
-    }
-
-    /**
-     * Get the content of the request
-     *
-     * @param  array  $additionnal_params Params
-     * @param  string $data               Data
-     * @param  array  $options            Data
-     * @return string
-     */
-    protected function getRequestContent($additionnal_params, $data, $options)
-    {
-        $body = null;
-        $params = array();
-        $params['authtoken'] = $this->authtoken;
-        $params['scope'] = 'crmapi';
-
-        if (isset($additionnal_params["newFormat"])) {
-            $params['newFormat'] = $additionnal_params["newFormat"];
-        }
-        if (isset($additionnal_params["id"])) {
-            $params['id'] = $additionnal_params["id"];
-        }
-        if (isset($additionnal_params["parentModule"])) {
-            $params['parentModule'] = $additionnal_params["parentModule"];
-        }
-        if (isset($additionnal_params["criteria"])) {
-            $params['criteria'] = $additionnal_params["criteria"];
-        }
-        if (isset($additionnal_params["selectColumns"])) {
-            $params['selectColumns'] = $additionnal_params["selectColumns"];
-        }
-        if (isset($additionnal_params["duplicateCheck"])) {
-            $params['duplicateCheck'] = $additionnal_params["duplicateCheck"];
-        }
-        if (isset($additionnal_params["version"])) {
-            $params['version'] = $additionnal_params["version"];
-        }
-        if (isset($options["postXMLData"]) && $options["postXMLData"]) {
-            $body['xmlData'] = $data;
-        } else {
-            $params['xmlData'] = $data;
-        }
-
-        return ["params" => $params, "body" => $body];
-    }
 
     /**
      * Convert an entity into XML

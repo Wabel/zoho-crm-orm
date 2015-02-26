@@ -67,6 +67,9 @@ class EntitiesGeneratorService {
             ->setNamespace($namespace)
             ->setMethod(PhpMethod::create('__construct'));
 
+        // Let's add the ZohoID property
+        self::registerProperty($class, "zohoId, "The ID of this record in Zoho\nType: string\n", "string");
+
         foreach ($fields as $fieldCategory) {
             foreach ($fieldCategory as $name=>$field) {
                 $req = $field['req'];
@@ -103,36 +106,14 @@ class EntitiesGeneratorService {
 
         $class->setName($daoClassName)
             ->setNamespace($namespace)
-            ->setParentClassName('Wabel\\Zoho\\CRM\\AbstractZohoDao');
+            ->setParentClassName('\\Wabel\\Zoho\\CRM\\AbstractZohoDao');
 
 
-        /*$constructor = PhpMethod::create('__construct')->addParameter(
-            PhpParameter::create('zohoClient')
-                ->setType('Wabel\\Zoho\\CRM\\ZohoClient'))
-            ->setBody('$this->zohoClient = $zohoClient;');
+        $class->setMethod(PhpMethod::create('getModule')->setBody('return '.var_export($moduleName, true).';'));
 
-        $class->setMethod($constructor);*/
+        $class->setMethod(PhpMethod::create('getFields')->setBody('return '.var_export($fields, true).';'));
 
-
-        $moduleNameProperty = PhpProperty::create('module')
-            ->setDescription("The name of the Zoho module")
-            ->setDefaultValue($moduleName)
-            ->setVisibility("private")
-            ->setStatic(true);
-
-        $class->setProperty($moduleNameProperty);
-        $class->setMethod(PhpMethod::create('getModule')->setBody('return $this->module'));
-
-        $fieldsList = PhpProperty::create('fields')
-            ->setDescription("List of all fields for this entity")
-            ->setDefaultValue($fields)
-            ->setVisibility("private")
-            ->setStatic(true);
-
-        $class->setProperty($fieldsList);
-        $class->setMethod(PhpMethod::create('getFields')->setBody('return $this->fields'));
-
-        $class->setMethod(PhpMethod::create('getBeanClassName')->setBody('return '.var_export($className, true)));
+        $class->setMethod(PhpMethod::create('getBeanClassName')->setBody('return '.var_export($className, true).';'));
 
         $generator = new CodeFileGenerator();
         $code = $generator->generate($class);

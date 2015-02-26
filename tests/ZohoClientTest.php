@@ -33,4 +33,13 @@ class ZohoClientTest extends PHPUnit_Framework_TestCase
 
         $this->assertArrayHasKey('Company', $fields->getRecords()['Company Information']);
     }
+
+    public function testDao() {
+        require __DIR__.'/generated/Contact.php';
+        require __DIR__.'/generated/ContactZohoDao.php';
+
+        $contactZohoDao = new \TestNamespace\ContactZohoDao($this->getClient());
+        $records = $contactZohoDao->searchRecords("(First Name:Tiger)");
+
+    }
 }
