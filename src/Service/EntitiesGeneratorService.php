@@ -68,7 +68,7 @@ class EntitiesGeneratorService {
             ->setMethod(PhpMethod::create('__construct'));
 
         // Let's add the ZohoID property
-        self::registerProperty($class, "zohoId, "The ID of this record in Zoho\nType: string\n", "string");
+        self::registerProperty($class, "zohoId", "The ID of this record in Zoho\nType: string\n", "string");
 
         foreach ($fields as $fieldCategory) {
             foreach ($fieldCategory as $name=>$field) {
