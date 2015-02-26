@@ -6,60 +6,23 @@ use Wabel\Zoho\CRM\Request\Response;
 use Wabel\Zoho\CRM\Wrapper\Element;
 
 /**
- * Client for provide interface with Zoho CRM
+ * Base class that provides access to Zoho through Zoho beans.
  *
- * TODO : Add comments (a lot)
  */
-class ZohoClient
+class AbstractZohoDao
 {
     /**
-     * URL for call request
-     *
-     * @var string
+     * @var ZohoClient
      */
-    const BASE_URI = 'https://crm.zoho.com/crm/private';
+    protected $zohoClient;
 
-    /**
-     * Token used for session of request
-     *
-     * @var string
-     */
-    protected $authtoken;
-
-    /**
-     * Instance of the client
-     *
-     * @var Client
-     */
-    protected $zohoRestClient;
-
-    /**
-     * Format selected for get request
-     *
-     * @var string
-     */
-    protected $format;
-
-    /**
-     * Module selected for get request
-     *
-     * @var string
-     */
-    protected $module;
-
-    /**
-     * Construct
-     *
-     * @param string $authtoken      Token for connection
-     * @param Client $zohoRestClient Guzzl Client for connection [optional]
-     */
-    public function __construct($authtoken, Client $zohoRestClient = null)
-    {
-        $this->authtoken = $authtoken;
-        // Only XML format is supported for the time being
-        $this->format = 'xml';
-        $this->zohoRestClient = $zohoRestClient ?: new Client();
+    public function __construct(ZohoClient $zohoClient) {
+        $this->zohoClient = $zohoClient;
     }
+
+    abstract protected function getModule();
+    abstract protected function getBeanClassName();
+    abstract protected function getFields();
 
     /**
      * Implements convertLead API method.
@@ -75,50 +38,13 @@ class ZohoClient
      *                           2 - use latest API implementation
      * @return Response The Response object
      */
-    public function convertLead($module, $leadId, $data, $params = array())
+    /*public function convertLead($module, $leadId, $data, $params = array())
     {
         $params['leadId'] = $leadId;
         $params['newFormat'] = 1;
 
         return $this->call($module, 'convertLead', $params, $data);
-    }
-
-    /**
-     * Implements getCVRecords API method.
-     *
-     * @param  string   $name    name of the Custom View
-     * @param  array    $params  request parameters
-     *                           selectColumns     String  Module(optional columns) i.e, leads(Last Name,Website,Email) OR All
-     *                           fromIndex         Integer Default value 1
-     *                           toIndex           Integer Default value 20
-     *                           Maximum value 200
-     *                           lastModifiedTime  DateTime  Default value: null
-     *                           If you specify the time, modified data will be fetched after the configured time.
-     *                           newFormat         Integer 1 (default) - exclude fields with null values in the response
-     *                           2 - include fields with null values in the response
-     *                           version           Integer 1 (default) - use earlier API implementation
-     *                           2 - use latest API implementation
-     * @return Response The Response object
-     */
-    public function getCVRecords($module, $name, $params = array())
-    {
-        $params['cvName'] = $name;
-        $params['newFormat'] = 1;
-
-        return $this->call($module, 'getCVRecords', $params);
-    }
-
-    /**
-     * Implements getFields API method.
-     *
-     * @return Response The Response object
-     */
-    public function getFields($module)
-    {
-        $params['newFormat'] = 1;
-
-        return $this->call($module, 'getFields', array());
-    }
+    }*/
 
     /**
      * Implements deleteRecords API method.
@@ -127,33 +53,33 @@ class ZohoClient
      *
      * @return Response The Response object
      */
-    public function deleteRecords($module, $id)
+    public function delete($id)
     {
+        $module = $this->getModule();
         $params['id'] = $id;
         $params['newFormat'] = 1;
 
-        return $this->call($module, 'deleteRecords', $params);
+        return $this->zohoClient->call($module, 'deleteRecords', $params);
     }
 
     /**
      * Implements getRecordById API method.
      *
      * @param  string   $id      Id of the record
-     * @param  array    $params  request parameters
-     *                           newFormat 1 (default) - exclude fields with null values in the response
-     *                           2 - include fields with null values in the response
-     *                           version   1 (default) - use earlier API implementation
-     *                           2 - use latest API implementation
-     * @return Response The Response object
+     * @return
      */
-    public function getRecordById($module, $id, $params = array())
+    public function getById($id)
     {
-        $params['id'] = $id;
-        if (empty($params['newFormat'])) {
-            $params['newFormat'] = 2;
-        }
+        $module = $this->getModule();
+        $params = array(
+            'id' => $id,
+            'newFormat' => 2
+        );
 
-        return $this->call($module, 'getRecordById', $params);
+        $response = $this->zohoClient->call($module, 'getRecordById', $params);
+
+        $records = $response->getRecords();
+
     }
 
     /**
@@ -397,7 +323,7 @@ class ZohoClient
      * @param  array    $options Options to add for configurations [optional]
      * @return Response
      */
-    public function call($module, $command, $params, $data = array(), $options = array())
+    protected function call($module, $command, $params, $data = array(), $options = array())
     {
         $uri = $this->getRequestURI($module, $command);
         $content = $this->getRequestContent($params, $data, $options);
