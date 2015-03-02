@@ -143,13 +143,21 @@ abstract class AbstractZohoDao
      *                           2 - use latest API implementation
      * @return Response The Response object
      */
-    public function getRelatedRecords($module, $id, $parentModule, $params = array())
+    public function getRelatedRecords($id, $parentModule, $fromIndex = null, $toIndex = null)
     {
         $params["id"] = $id;
         $params["parentModule"] = $parentModule;
         $params['newFormat'] = 1;
+        if($fromIndex) {
+            $params['fromIndex'] = $fromIndex;
+        }
+        if($toIndex) {
+            $params['toIndex'] = $toIndex;
+        }
 
-        return $this->call($module, 'getRelatedRecords', $params);
+        $module = $this->getModule();
+
+        return $this->zohoClient->call($module, 'getRelatedRecords', $params);
     }
 
     /**
@@ -293,18 +301,22 @@ abstract class AbstractZohoDao
      * @return Response The Response object
      * @todo Use full SimpleXMLRequest in data to check number easily and set default parameters
      */
-    public function insertRecords($module, $data, $params = array(), $options = array())
+    public function insertRecords($xmlData, $wfTrigger = null, $duplicateCheck = null, $isApproval = null, $version = 4)
     {
-        if (!isset($params['duplicateCheck'])) {
-            $params['duplicateCheck'] = 2;
-        }
-        if (!$params['version']) {
-            // Version 4 is mandatory for updating multiple records.
-        $params['version'] = 4;
-        }
+        $module = $this->getModule();
+        $params['version'] = $version;
         $params['newFormat'] = 1;
+        if($wfTrigger) {
+            $params['wfTrigger'] = $wfTrigger;
+        }
+        if($duplicateCheck) {
+            $params['duplicateCheck'] = $duplicateCheck;
+        }
+        if($isApproval) {
+            $params['isApproval'] = $isApproval;
+        }
 
-        return $this->call($module, 'insertRecords', $params, $data, $options);
+        return $this->zohoClient->call($module, 'insertRecords', $params, $data, $options);
     }
 
     /**
