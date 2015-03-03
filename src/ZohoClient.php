@@ -416,25 +416,8 @@ class ZohoClient
         if ($zohoResponse->ifSuccess()) {
             return $zohoResponse;
         } else {
-            throw new ZohoCRMException($zohoResponse->getMessage(), $zohoResponse->getCode());
+            throw new ZohoCRMException($zohoResponse);
         }
-
-        /*if ($response->isError()) {
-            return false;
-        } else {
-            if ($this->format = "xml") {
-                $zohoResponse =  new Response($response->getBody()->__toString(), $module, $command);
-
-                if ($zohoResponse->ifSuccess()) {
-                    return $zohoResponse;
-                } else {
-                    throw new ZohoCRMException($zohoResponse->getMessage(), $zohoResponse->getCode());
-                }
-            } elseif ($this->format = "json") {
-                // FIXME: we should remove json support and do only XML.
-                return $response->json();
-            }
-        }*/
     }
 
     /**

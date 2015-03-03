@@ -3,6 +3,7 @@
 use GuzzleHttp\Client;
 use Wabel\Zoho\CRM\Exception\ZohoCRMException;
 use Wabel\Zoho\CRM\Request\Response;
+use Wabel\Zoho\CRM\Wrapper\AbstractZohoBean;
 use Wabel\Zoho\CRM\Wrapper\Element;
 
 /**
@@ -40,6 +41,110 @@ abstract class AbstractZohoDao
     }
 
     /**
+     * Parse a Zoho Response in order to retrieve one or several ZohoBeans from it
+     * @param Response $zohoResponse
+     * TODO Mike : Make it private ?
+     */
+    protected function getBeansFromResponse(Response $zohoResponse) {
+
+        $beanClass = $this->getBeanClassName();
+        $fields = $this->getFlatFields();
+
+        $beanArray = array();
+
+        foreach ($zohoResponse->getRecords() as $record) {
+
+            /** @var AbstractZohoBean $bean */
+            $bean = new $beanClass();
+
+            // First, let's fill the ID.
+            // The ID is CONTACTID or ACCOUNTID or Id depending on the Zoho type.
+            $idName = strtoupper(trim($this->getModule(), "s"))."ID";
+            if (isset($record[$idName])) {
+                $id = $record[$idName];
+            } else {
+                $id = $record['Id'];
+            }
+            $bean->setZohoId($id);
+
+            foreach ($record as $key=>$value) {
+                if (isset($fields[$key])) {
+                    $setter = $fields[$key]['setter'];
+
+                    switch ($fields[$key]['type']) {
+                        case "Date":
+                            $value = \DateTime::createFromFormat('M/d/Y', $value);
+                            break;
+                        case "DateTime":
+                            $value = \DateTime::createFromFormat('Y-m-d H:i:s', $value);
+                            break;
+                        case "Boolean":
+                            $value = ($value == "true");
+                            break;
+                        default:
+                            break;
+                    }
+                    $bean->$setter($value);
+
+                }
+            }
+
+            $beanArray[] = $bean;
+        }
+        return $beanArray;
+    }
+
+    /**
+     * Convert a ZohoBean or an array of ZohoBeans into XML
+     *
+     * @param $zohoBeans AbstractZohoBean|AbstractZohoBean[]
+     * @return string  XML created
+     */
+    public function toXml($zohoBeans)
+    {
+        $module = $this->getModule();
+
+        $no = 1;
+        $xml = '<'.$module.'>'."\n";
+
+        foreach ($zohoBeans as $zohoBean) {
+
+            $element = new \ReflectionObject($zohoBean);
+            $properties = $element->getProperties();
+            $xml = $no ? '' : '<'.$zohoBean->getModule().'>'."\n";
+            $xml .= '<row no="'.($no ? $no : '1').'">'."\n";
+
+            foreach ($properties as $property) {
+                $propName = $property->getName();
+                $propValue = $zohoBean->$propName;
+
+                if (!empty($propValue) && $propName !== "module") {
+
+                    // Dealing with the customs zoho attributes
+                    if ($propName === "customs" && is_array($propValue)) {
+                        foreach ($propValue as $name => $value) {
+                            if (htmlspecialchars($value) !== $value) {
+                                $value = htmlspecialchars($value);
+                            }
+                            $xml .= '<FL val="'.str_replace(['_', 'N36', 'E5F'], [' ', '$', '_'], $name).'">'.$value.'</FL>'."\n";
+                        }
+                    } else {
+                        if (htmlspecialchars($propValue) !== $propValue && $propName !== "Account Name") {
+                            $propValue = htmlspecialchars($propValue);
+                        }
+                        $xml .= '<FL val="'.str_replace(['_', 'N36', 'E5F'], [' ', '$', '_'], $propName).'">'.$propValue.'</FL>'."\n";
+                    }
+                }
+            }
+        }
+
+        $xml .= '</row>'."\n";
+        $xml .= '</'.$module.'>';
+
+        return $xml;
+    }
+
+    /**
      * Implements convertLead API method.
      *
      * @param  string   $module  The Zoho module to query
@@ -74,7 +179,8 @@ abstract class AbstractZohoDao
         $params['id'] = $id;
         $params['newFormat'] = 1;
 
-        return $this->zohoClient->call($module, 'deleteRecords', $params);
+        $response =  $this->zohoClient->call($module, 'deleteRecords', $params);
+        $this->getBeansFromResponse($response);
     }
 
     /**
@@ -93,7 +199,7 @@ abstract class AbstractZohoDao
 
         $response = $this->zohoClient->call($module, 'getRecordById', $params);
 
-        $records = $response->getRecords();
+        return $this->getBeansFromResponse($response);
 
     }
 
@@ -157,7 +263,9 @@ abstract class AbstractZohoDao
 
         $module = $this->getModule();
 
-        return $this->zohoClient->call($module, 'getRelatedRecords', $params);
+        $response = $this->zohoClient->call($module, 'getRelatedRecords', $params);
+
+        return $this->getBeansFromResponse($response);
     }
 
     /**
@@ -202,57 +310,9 @@ abstract class AbstractZohoDao
 
         $params['newFormat'] = 1;
 
-        $results = $this->zohoClient->call($module, 'searchRecords', $params);
+        $response = $this->zohoClient->call($module, 'searchRecords', $params);
 
-
-        // TODO: extract this in a private method.
-        $beanClass = $this->getBeanClassName();
-        $fields = $this->getFlatFields();
-        //var_dump($results);
-
-        $beanArray = array();
-
-        foreach ($results->getRecords() as $record) {
-
-            $bean = new $beanClass();
-
-            // First, let's fill the ID.
-            // The ID is CONTACTID or ACCOUNTID or Id depending on the Zoho type.
-            if (isset($record['CONTACTID'])) {
-                $id = $record['CONTACTID'];
-            } elseif (isset($record['ACCOUNTID'])) {
-                $id = $record['ACCOUNTID'];
-            } else {
-                $id = $record['Id'];
-                // FIXME: RULE FOR ID IS MORE COMPLEX: FOR INSTANCE, WE HAVE A LEADID and not an Id
-            }
-            $bean->setZohoId($id);
-
-            foreach ($record as $key=>$value) {
-                if (isset($fields[$key])) {
-                    $setter = $fields[$key]['setter'];
-
-                    switch ($fields[$key]['type']) {
-                        case "Date":
-                            $value = \DateTime::createFromFormat('M/d/Y', $value);
-                            break;
-                        case "DateTime":
-                            $value = \DateTime::createFromFormat('Y-m-d H:i:s', $value);
-                            break;
-                        case "Boolean":
-                            $value = ($value == "true");
-                            break;
-                        default:
-                            break;
-                    }
-                    $bean->$setter($value);
-
-                }
-            }
-
-            $beanArray[] = $bean;
-        }
-        return $beanArray;
+        return $this->getBeansFromResponse($response);
     }
 
     /**
@@ -269,12 +329,25 @@ abstract class AbstractZohoDao
      *
      * @return Response The Response object
      */
-    public function getUsers($type = 'AllUsers', $newFormat = 1)
+    public function getUsers($type = 'AllUsers')
     {
-        $params['type'] = $type;
-        $params['newFormat'] = $newFormat;
+        switch($type) {
+            case 'AllUsers':
+            case 'ActiveUsers':
+            case 'DeactiveUsers':
+            case 'AdminUsers':
+            case 'ActiveConfirmedAdmins':
+                $params['type'] = $type;
+                break;
+            default :
+                $params['type'] = 'AllUsers';
+                break;
+        }
+        $params['newFormat'] = 1;
 
-        return $this->call('Users', 'getUsers', $params);
+        $response = $this->zohoClient->call('Users', 'getUsers', $params);
+
+        return $this->getBeansFromResponse($response);
     }
 
     /**
@@ -299,12 +372,10 @@ abstract class AbstractZohoDao
      *
      * @param  array    $options Options to add for configurations [optional]
      * @return Response The Response object
-     * @todo Use full SimpleXMLRequest in data to check number easily and set default parameters
      */
-    public function insertRecords($xmlData, $wfTrigger = null, $duplicateCheck = null, $isApproval = null, $version = 4)
+    public function insertRecords($beans, $wfTrigger = null, $duplicateCheck = null, $isApproval = null)
     {
         $module = $this->getModule();
-        $params['version'] = $version;
         $params['newFormat'] = 1;
         if($wfTrigger) {
             $params['wfTrigger'] = $wfTrigger;
@@ -316,7 +387,17 @@ abstract class AbstractZohoDao
             $params['isApproval'] = $isApproval;
         }
 
-        return $this->zohoClient->call($module, 'insertRecords', $params, $data, $options);
+        // The XMLData should be sent via post
+        $params['postXMLData'] = true;
+
+        // If there are several beans to insert, we
+        $params['version'] = is_array($beans) ? 4 : 1;
+        // TODO Convert beans to XML to inject them in the request
+        $xmlData = $beans;
+
+        $response = $this->zohoClient->call($module, 'insertRecords', $params, $xmlData);
+
+        return $this->getBeansFromResponse($response);
     }
 
     /**
@@ -338,22 +419,33 @@ abstract class AbstractZohoDao
      * @return Response The Response object
      * @todo Use full SimpleXMLRequest in data to check number easily and set default parameters
      */
-    public function updateRecords($module, $data, $id = null, $params = array(), $options = array())
+    public function updateRecords($beans, $id = null, $wfTrigger = null)
     {
-        if ($id) {
-            $params['id'] = $id;
-            $params['version'] = isset($params['version']) ? $params['version'] : 1;
-        } elseif (!isset($params['version']) || $params['version'] == 4) {
-            $params['version'] = 4;
-            if (!isset($options['postXMLData'])) {
-                $options['postXMLData'] = true;
-            }
-        } else {
-            throw new \InvalidArgumentException('Record Id is required and cannot be empty.');
-        }
+        $module = $this->getModule();
         $params['newFormat'] = 1;
 
-        return $this->call($module, 'updateRecords', $params, $data, $options);
+        if($wfTrigger) {
+            $params['wfTrigger'] = $wfTrigger;
+        }
+
+        // If there's only one record to update, we set the ID in the get parameters
+        if (!is_array($beans)) {
+            $params['id'] = $id;
+            $params['version'] = 1;
+
+            if(!$id) {
+                throw new \InvalidArgumentException('Record Id is required and cannot be empty.');
+            }
+        }
+        else {
+            $params['version'] = 4;
+            $options['postXMLData'] = true;
+        }
+        $params['newFormat'] = 1;
+        // TODO Convert beans to XML to inject them in the request
+        $xmlData = $beans;
+
+        return $this->zohoClient->call($module, 'updateRecords', $params, $xmlData);
     }
 
     /**
@@ -382,7 +474,7 @@ abstract class AbstractZohoDao
         $params['id'] = $id;
         $params['content'] = $content;
 
-        return $this->call($module, 'uploadFile', $params);
+        return $this->zohoClient->call($module, 'uploadFile', $params);
     }
 
     /**
@@ -399,7 +491,7 @@ abstract class AbstractZohoDao
         }
         $params['id'] = $id;
 
-        return $this->call($module, 'downloadFile', $params);
+        return $this->zohoClient->call($module, 'downloadFile', $params);
     }
 
     /**
@@ -407,76 +499,6 @@ abstract class AbstractZohoDao
      */
     public function getModules()
     {
-        return $this->call('Info', 'getModules', []);
-    }
-
-
-    /**
-     * Convert an entity into XML
-     *
-     * @param  Element $entity Element with values on fields setted
-     * @return string  XML created
-     * @todo
-     - Add iteration for multiples entities and creation of xml with collection
-     */
-    public function mapEntity(Element $entity, $no = null)
-    {
-        if (!$entity->getModule()) {
-            throw new \Exception("Invalid module returned by entity", 1);
-        }
-        $element = new \ReflectionObject($entity);
-        $properties = $element->getProperties();
-        $xml = $no ? '' : '<'.$entity->getModule().'>'."\n";
-        $xml .= '<row no="'.($no ? $no : '1').'">'."\n";
-        foreach ($properties as $property) {
-            $propName = $property->getName();
-            $propValue = $entity->$propName;
-
-            if (!empty($propValue) && $propName !== "module") {
-
-                // Dealing with the customs zoho attributes
-                if ($propName === "customs" && is_array($propValue)) {
-                    foreach ($propValue as $name => $value) {
-                        if (htmlspecialchars($value) !== $value) {
-                            $value = htmlspecialchars($value);
-                        }
-                        $xml .= '<FL val="'.str_replace(['_', 'N36', 'E5F'], [' ', '$', '_'], $name).'">'.$value.'</FL>'."\n";
-                    }
-                } else {
-                    if (htmlspecialchars($propValue) !== $propValue && $propName !== "Account Name") {
-                        $propValue = htmlspecialchars($propValue);
-                    }
-                    $xml .= '<FL val="'.str_replace(['_', 'N36', 'E5F'], [' ', '$', '_'], $propName).'">'.$propValue.'</FL>'."\n";
-                }
-            }
-        }
-        $xml .= '</row>'."\n";
-        $xml .= $no ? '' :  '</'.$entity->getModule().'>';
-
-        return $xml;
-    }
-
-    /**
-     * Convert an array of entities into XML
-     *
-     * @param  Element[] $entities Element with values on fields setted
-     * @return string    XML created
-     */
-    public function mapEntities(array $entities)
-    {
-        if (count($entities) === 0) {
-            throw new ZohoCRMException("mapEntities called with empty array.");
-        }
-        $firstEntity = reset($entities);
-        $module = $firstEntity->getModule();
-
-        $no = 1;
-        $xml = '<'.$module.'>'."\n";
-        foreach ($entities as $entity) {
-            $xml .= $this->mapEntity($entity, $no++);
-        }
-        $xml .= '</'.$module.'>';
-
-        return $xml;
+        return $this->zohoClient->call('Info', 'getModules', []);
     }
 }

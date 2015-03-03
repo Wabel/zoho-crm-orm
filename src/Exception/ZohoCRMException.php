@@ -1,4 +1,5 @@
 <?php namespace Wabel\Zoho\CRM\Exception;
+use Wabel\Zoho\CRM\Request\Response;
 
 /**
  * Zoho CRM Exception.
@@ -39,12 +40,11 @@ class ZohoCRMException extends \Exception
    '4809'  => 'Exceeded storage space limit.',
   );
 
-    public function __construct($code)
+    public function __construct(Response $zohoResponse)
     {
-        if (!array_key_exists($code, self::$errorMessages)) {
-            parent::__construct("Unknown Zoho CRM error code: '$code'");
-        } else {
-            parent::__construct(self::$errorMessages[$code], $code);
-        }
+        $code = $zohoResponse->getCode();
+        $message = !array_key_exists($code, self::$errorMessages) ? self::$errorMessages[$code] : "Unknown Zoho CRM error code [$code]: ".$zohoResponse->getMessage();
+
+        parent::__construct($message, $code);
     }
 }
