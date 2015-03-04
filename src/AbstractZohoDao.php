@@ -2,6 +2,7 @@
 
 use GuzzleHttp\Client;
 use Wabel\Zoho\CRM\Exception\ZohoCRMException;
+use Wabel\Zoho\CRM\Exception\ZohoCRMResponseException;
 use Wabel\Zoho\CRM\Request\Response;
 use Wabel\Zoho\CRM\Wrapper\AbstractZohoBean;
 use Wabel\Zoho\CRM\Wrapper\Element;
@@ -112,9 +113,12 @@ abstract class AbstractZohoDao
 
         foreach ($zohoBeans as $zohoBean) {
 
-            $properties = $this->getFields();
+            $properties = $this->getFlatFields();
             $row = $module->addChild("row");
             $row->addAttribute("no", $no);
+
+            $fl = $row->addChild("FL", $zohoBean->getZohoId());
+            $fl->addAttribute("val", "Id");
 
             foreach ($properties as $name => $params) {
                 $getter = $params['getter'];
@@ -140,11 +144,7 @@ abstract class AbstractZohoDao
                             break;
                     }
 
-//                    if (htmlspecialchars($value) !== $value) {
-//                        htmlentities($value);
-//                    }
-
-                    $fl = $row->addChild("FL", $value);
+                    $fl = $row->addChild("FL", htmlspecialchars($value));
                     $fl->addAttribute("val", $name);
                 }
             }
@@ -319,7 +319,16 @@ abstract class AbstractZohoDao
 
         $params['newFormat'] = 1;
 
-        $response = $this->zohoClient->call($module, 'searchRecords', $params);
+        try {
+            $response = $this->zohoClient->call($module, 'searchRecords', $params);
+        } catch (ZohoCRMResponseException $e) {
+            // No records found? Let's return an empty array!
+            if ($e->getCode() == 4422) {
+                return array();
+            } else {
+                throw $e;
+            }
+        }
 
         return $this->getBeansFromResponse($response);
     }
@@ -399,12 +408,29 @@ abstract class AbstractZohoDao
         // If there are several beans to insert, we
         //$params['version'] = is_array($beans) ? 4 : 1;
         $params['version'] = 4;
-        // TODO Convert beans to XML to inject them in the request
-        $xmlData = $this->toXml($beans);
+        $xmlData = $this->toXml($beans)->asXML();
 
-        $response = $this->zohoClient->call($module, 'insertRecords', $params, $xmlData);
+        $response = $this->zohoClient->call($module, 'insertRecords', $params, [ 'xmlData' => $xmlData ]);
 
-        return $this->getBeansFromResponse($response);
+        $records = $response->getRecords();
+        if (count($records) != count($beans)) {
+            throw new ZohoCRMException("Error while inserting beans in Zoho. ".count($beans)." passed in parameter, but ".count($records)." returned.");
+        }
+
+        $i = 1;
+        foreach ($beans as $bean) {
+            $record = $records[$i];
+
+            if (substr($record['code'], 0, 1) != "2") {
+                // This field is probably in error!
+                throw new ZohoCRMException('An error occurred while inserting records: '.$record['details'], $record['code']);
+            }
+
+            $bean->setZohoId($record['Id']);
+
+            $i++;
+        }
+        //return $this->getBeansFromResponse($response);
     }
 
     /**
@@ -414,7 +440,6 @@ abstract class AbstractZohoDao
      * @param bool $wfTrigger Set value as true to trigger the workflow rule in Zoho
      * @return Response The Response object
      * @throws ZohoCRMException
-     * @todo Use full SimpleXMLRequest in data to check number easily and set default parameters
      */
     public function updateRecords(array $beans, $wfTrigger = null)
     {
@@ -428,9 +453,21 @@ abstract class AbstractZohoDao
         $params['version'] = 4;
         $params['newFormat'] = 1;
 
-        $xmlData = $this->toXml($beans);
+        $xmlData = $this->toXml($beans)->asXML();
 
-        return $this->zohoClient->call($module, 'updateRecords', $params, $xmlData);
+        $response = $this->zohoClient->call($module, 'updateRecords', $params, [ 'xmlData' => $xmlData ]);
+
+        $records = $response->getRecords();
+        if (count($records) != count($beans)) {
+            throw new ZohoCRMException("Error while inserting beans in Zoho. ".count($beans)." passed in parameter, but ".count($records)." returned.");
+        }
+
+        foreach ($records as $record) {
+            if (substr($record['code'], 0, 1) != "2") {
+                // This field is probably in error!
+                throw new ZohoCRMException('An error occurred while inserting records. '.(isset($record['message'])?$record['message']:""), $record['code']);
+            }
+        }
     }
 
     /**
@@ -505,14 +542,18 @@ abstract class AbstractZohoDao
         $updateRecords = [];
 
         foreach ($beans as $bean) {
-            if ($bean->getSohoId()) {
+            if ($bean->getZohoId()) {
                 $updateRecords[] = $bean;
             } else {
                 $insertRecords[] = $bean;
             }
         }
 
-        $this->updateRecords($updateRecords);
-        $this->insertRecords($insertRecords, $wfTrigger, $duplicateCheck, $isApproval);
+        if ($updateRecords) {
+            $this->updateRecords($updateRecords, $wfTrigger);
+        }
+        if ($insertRecords) {
+            $this->insertRecords($insertRecords, $wfTrigger, $duplicateCheck, $isApproval);
+        }
     }
 }

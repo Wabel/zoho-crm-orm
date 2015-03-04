@@ -41,12 +41,24 @@ class ZohoClientTest extends PHPUnit_Framework_TestCase
         $contactZohoDao = new \TestNamespace\ContactZohoDao($this->getClient());
 
         $lastName = uniqid("Test");
+        $email = $lastName."@test.com";
 
         $contactBean = new \TestNamespace\Contact();
         $contactBean->setFirstName("Testuser");
         $contactBean->setLastName($lastName);
+        // Testing special characters.
+        $contactBean->setTitle("M&M's épatant");
 
         $contactZohoDao->save($contactBean);
+
+        $this->assertNotEmpty($contactBean->getZohoId(), "ZohoID must be set in the bean after save.");
+
+        // Second save (to verify the updateRecords method).
+        $contactBean->setEmail($email);
+        $contactZohoDao->save($contactBean);
+
+        // We need to wait for Zoho to index the record.
+        sleep(120);
 
         $records = $contactZohoDao->searchRecords("(Last Name:$lastName)");
 
@@ -55,6 +67,11 @@ class ZohoClientTest extends PHPUnit_Framework_TestCase
             $this->assertInstanceOf("\\TestNamespace\\Contact", $record);
             $this->assertEquals("Testuser", $record->getFirstName());
             $this->assertEquals($lastName, $record->getLastName());
+            $this->assertEquals($email, $record->getEmail());
+            $this->assertEquals("M&M's épatant", $record->getTitle());
         }
+
+
+        $contactZohoDao->delete($contactBean->getZohoId());
     }
 }

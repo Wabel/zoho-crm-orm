@@ -394,19 +394,27 @@ class ZohoClient
      * @param  string   $module  The module to use
      * @param  string   $command Command to call
      * @param  array    $params  Options
-     * @param  array    $data    Data to send [optional]
+     * @param  \SimpleXMLElement|string    $data    Data to send [optional]
      * @param  array    $options Options to add for configurations [optional]
      * @return Response
      */
-    public function call($module, $command, $params, $data = array(), $options = array())
+    public function call($module, $command, $getParams = array(), $postParams = array())
     {
+
+
+        $getParams['authtoken'] = $this->authtoken;
+        $getParams['scope'] = 'crmapi';
+
         $uri = $this->getRequestURI($module, $command);
-        $content = $this->getRequestContent($params, $data, $options);
+        //$content = $this->getRequestContent($params, $data, $options);
 
         $request = $this->zohoRestClient->createRequest("POST", $uri);
-        $request->getBody()->write($content["body"]);
+        foreach ($postParams as $key=>$value) {
+            $request->getBody()->setField($key, $value);
+        }
+
         $query = $request->getQuery();
-        foreach ($content["params"] as $param => $value) {
+        foreach ($getParams as $param => $value) {
             $query[$param] = $value;
         }
 
@@ -438,48 +446,4 @@ class ZohoClient
         return implode('/', $parts);
     }
 
-    /**
-     * Get the content of the request
-     *
-     * @param  array  $additionnal_params Params
-     * @param  string $data               Data
-     * @param  array  $options            Data
-     * @return string
-     */
-    protected function getRequestContent($additionnal_params, $data, $options)
-    {
-        $body = null;
-        $params = array();
-        $params['authtoken'] = $this->authtoken;
-        $params['scope'] = 'crmapi';
-
-        if (isset($additionnal_params["newFormat"])) {
-            $params['newFormat'] = $additionnal_params["newFormat"];
-        }
-        if (isset($additionnal_params["id"])) {
-            $params['id'] = $additionnal_params["id"];
-        }
-        if (isset($additionnal_params["parentModule"])) {
-            $params['parentModule'] = $additionnal_params["parentModule"];
-        }
-        if (isset($additionnal_params["criteria"])) {
-            $params['criteria'] = $additionnal_params["criteria"];
-        }
-        if (isset($additionnal_params["selectColumns"])) {
-            $params['selectColumns'] = $additionnal_params["selectColumns"];
-        }
-        if (isset($additionnal_params["duplicateCheck"])) {
-            $params['duplicateCheck'] = $additionnal_params["duplicateCheck"];
-        }
-        if (isset($additionnal_params["version"])) {
-            $params['version'] = $additionnal_params["version"];
-        }
-        //if (isset($options["postXMLData"]) && $options["postXMLData"]) {
-            $body['xmlData'] = $data;
-        /*} else {
-            $params['xmlData'] = $data;
-        }*/
-
-        return ["params" => $params, "body" => $body];
-    }
 }

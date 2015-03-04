@@ -77,3 +77,19 @@ $namespace = 'TestNamespace';
 $generator->generateAll($directory, $namespace);
 ```
 
+Setting up unit tests
+---------------------
+
+Interested in contributing? You can easily set up the unit tests environment:
+
+- copy the `phpunit.xml.dist` file into `phpunit.xml`
+- change the stored `auth_token`
+- run the tests: `vendor/bin/phpunit`
+
+
+Troubleshooting
+---------------
+
+- I'm saving a bean (using the `save` method of the DAO) and searching for it afterwards (using `searchRecords`). The bean is not returned.  
+  This is a Zoho issue. Zoho takes about one minute to index the records you insert. So you must wait about one minute
+  before the Zoho bean you saved will be findable using the `searchRecords` method.
