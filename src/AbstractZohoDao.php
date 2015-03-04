@@ -43,7 +43,7 @@ abstract class AbstractZohoDao
     /**
      * Parse a Zoho Response in order to retrieve one or several ZohoBeans from it
      * @param Response $zohoResponse
-     * TODO Mike : Make it private ?
+     * @return AbstractZohoBean[]
      */
     protected function getBeansFromResponse(Response $zohoResponse) {
 
@@ -95,9 +95,9 @@ abstract class AbstractZohoDao
     }
 
     /**
-     * Convert a ZohoBean or an array of ZohoBeans into XML
+     * Convert an array of ZohoBeans into a SimpleXMLElement
      *
-     * @param $zohoBeans AbstractZohoBean|AbstractZohoBean[]
+     * @param $zohoBeans AbstractZohoBean[]
      * @return \SimpleXMLElement
      */
     public function toXml($zohoBeans)
