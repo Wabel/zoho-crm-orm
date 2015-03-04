@@ -32,7 +32,7 @@ class EntitiesGeneratorService {
             try {
                 $this->generateModule($module['key'], $module['pl'], $module['sl'], $targetDirectory, $namespace);
             } catch (ZohoCRMException $e) {
-                error_log("Error thrown when retrieving fields for module ".$module['key'].". Error message: ".$e);
+                error_log("Error thrown when retrieving fields for module ".$module['key'].". Error message: ".$e->getMessage());
             }
         }
     }

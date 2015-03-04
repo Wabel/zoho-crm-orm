@@ -213,8 +213,8 @@ class Response
       elseif (isset($xml->result->message) && isset($xml->result->code)) {
           $this->message = (string) $xml->result->message;
           $this->code = (string) $xml->result->code;
-          preg_match('/[0-9]{18}/', $this->message, $matches);
-          $this->recordId = $matches[0];
+          //preg_match('/[0-9]{18}/', $this->message, $matches);
+          //$this->recordId = $matches[0];
       }
 
       // downloadFile
