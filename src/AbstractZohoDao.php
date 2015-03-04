@@ -410,20 +410,10 @@ abstract class AbstractZohoDao
     /**
      * Implements updateRecords API method.
      *
-     * @param string $id     unique ID of the record to be updated
-     * @param array  $data   xmlData represented as an array
-     *                       array will be converted into XML before sending the request
-     * @param array  $params request parameters
-     *                       wfTrigger    Boolean   Set value as true to trigger the workflow rule
-     *                       while inserting record into CRM account. By default, this parameter is false.
-     *                       newFormat    Integer   1 (default) - exclude fields with "null" values while updating data
-     *                       2 - include fields with "null" values while updating data
-     *                       version      Integer   1 (default) - use earlier API implementation
-     *                       2 - use latest API implementation
-     *                       4 - update multiple records in a single API method call
-     *
-     * @param  array    $options Options to add for configurations [optional]
+     * @param array $beans The list of beans to update.
+     * @param bool $wfTrigger Set value as true to trigger the workflow rule in Zoho
      * @return Response The Response object
+     * @throws ZohoCRMException
      * @todo Use full SimpleXMLRequest in data to check number easily and set default parameters
      */
     public function updateRecords(array $beans, $wfTrigger = null)
