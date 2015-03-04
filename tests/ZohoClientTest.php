@@ -31,7 +31,7 @@ class ZohoClientTest extends PHPUnit_Framework_TestCase
 
         $fields = $zohoClient->getFields('Leads');
 
-        $this->assertArrayHasKey('Company', $fields->getRecords()['Company Information']);
+        $this->assertArrayHasKey('Lead Owner', $fields->getRecords()['Lead Information']);
     }
 
     public function testDao() {
