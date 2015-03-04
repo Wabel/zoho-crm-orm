@@ -444,26 +444,14 @@ abstract class AbstractZohoDao
     /**
      * Implements uploadFile API method.
      *
-     * @param string $id unique ID of the record to be updated
-     *
-     * @param file path $content Pass the File Input Stream of the file
-     *
-     * @param array $params request parameters
-     *                      wfTrigger    Boolean   Set value as true to trigger the workflow rule
-     *                      while inserting record into CRM account. By default, this parameter is false.
-     *                      newFormat    Integer   1 (default) - exclude fields with "null" values while updating data
-     *                      2 - include fields with "null" values while updating data
-     *                      version      Integer   1 (default) - use earlier API implementation
-     *                      2 - use latest API implementation
-     *                      4 - update multiple records in a single API method call
-     *
+     * @param string $id Zoho Id of the record to retrieve
+     * @param string $content The string containing the file
      * @return Response The Response object
+     * @throws ZohoCRMResponseException
      */
-    public function uploadFile($module, $id, $content, $params = array())
+    public function uploadFile($id, $content)
     {
-        if (empty($id)) {
-            throw new \InvalidArgumentException('Record Id is required and cannot be empty.');
-        }
+        $module = $this->getModule();
         $params['id'] = $id;
         $params['content'] = $content;
 
@@ -474,14 +462,11 @@ abstract class AbstractZohoDao
      * Implements downloadFile API method.
      *
      * @param string $id unique ID of the attachment
-     *
      * @return Response The Response object
      */
-    public function downloadFile($module, $id, $params = array())
+    public function downloadFile($id)
     {
-        if (empty($id)) {
-            throw new \InvalidArgumentException('Record Id is required and cannot be empty.');
-        }
+        $module = $this->getModule();
         $params['id'] = $id;
 
         return $this->zohoClient->call($module, 'downloadFile', $params);
