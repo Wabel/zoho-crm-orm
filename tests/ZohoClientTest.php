@@ -39,12 +39,22 @@ class ZohoClientTest extends PHPUnit_Framework_TestCase
         require __DIR__.'/generated/ContactZohoDao.php';
 
         $contactZohoDao = new \TestNamespace\ContactZohoDao($this->getClient());
-        $records = $contactZohoDao->searchRecords("(First Name:Tiger)");
 
-        $this->assertNotEmpty($records);
+        $lastName = uniqid("Test");
+
+        $contactBean = new \TestNamespace\Contact();
+        $contactBean->setFirstName("Testuser");
+        $contactBean->setLastName($lastName);
+
+        $contactZohoDao->save($contactBean);
+
+        $records = $contactZohoDao->searchRecords("(Last Name:$lastName)");
+
+        $this->assertCount(1, $records);
         foreach ($records as $record) {
             $this->assertInstanceOf("\\TestNamespace\\Contact", $record);
-            $this->assertEquals("Tiger", $record->getFirstName());
+            $this->assertEquals("Testuser", $record->getFirstName());
+            $this->assertEquals($lastName, $record->getLastName());
         }
     }
 }
