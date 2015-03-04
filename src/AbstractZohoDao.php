@@ -98,50 +98,56 @@ abstract class AbstractZohoDao
      * Convert a ZohoBean or an array of ZohoBeans into XML
      *
      * @param $zohoBeans AbstractZohoBean|AbstractZohoBean[]
-     * @return string  XML created
+     * @return \SimpleXMLElement
      */
     public function toXml($zohoBeans)
     {
         $module = $this->getModule();
 
         $no = 1;
-        $xml = '<'.$module.'>'."\n";
+        $module = new \SimpleXMLElement("<$module/>");
 
         foreach ($zohoBeans as $zohoBean) {
 
-            $element = new \ReflectionObject($zohoBean);
-            $properties = $element->getProperties();
-            $xml = $no ? '' : '<'.$zohoBean->getModule().'>'."\n";
-            $xml .= '<row no="'.($no ? $no : '1').'">'."\n";
+            $properties = $this->getFields();
+            $row = $module->addChild("row");
+            $row->addAttribute("no", $no);
 
-            foreach ($properties as $property) {
-                $propName = $property->getName();
-                $propValue = $zohoBean->$propName;
+            foreach ($properties as $name => $params) {
+                $getter = $params['getter'];
+                $value = $zohoBean->$getter();
 
-                if (!empty($propValue) && $propName !== "module") {
+                if (!empty($value)) {
 
-                    // Dealing with the customs zoho attributes
-                    if ($propName === "customs" && is_array($propValue)) {
-                        foreach ($propValue as $name => $value) {
-                            if (htmlspecialchars($value) !== $value) {
-                                $value = htmlspecialchars($value);
-                            }
-                            $xml .= '<FL val="'.str_replace(['_', 'N36', 'E5F'], [' ', '$', '_'], $name).'">'.$value.'</FL>'."\n";
-                        }
-                    } else {
-                        if (htmlspecialchars($propValue) !== $propValue && $propName !== "Account Name") {
-                            $propValue = htmlspecialchars($propValue);
-                        }
-                        $xml .= '<FL val="'.str_replace(['_', 'N36', 'E5F'], [' ', '$', '_'], $propName).'">'.$propValue.'</FL>'."\n";
+                    // We convert the value back to a proper format if the Zoho Type is Date, DateTime or Boolean
+                    switch ($params['type']) {
+                        case "Date":
+                            /** @var \DateTime $value */
+                            $value = $value->format('M/d/Y');
+                            break;
+                        case "DateTime":
+                            /** @var \DateTime $value */
+                            $value = $value->format('Y-m-d H:i:s');
+                            break;
+                        case "Boolean":
+                            /** @var boolean $value */
+                            $value = $value ? "true" : "false";
+                            break;
+                        default:
+                            break;
                     }
+
+//                    if (htmlspecialchars($value) !== $value) {
+//                        htmlentities($value);
+//                    }
+
+                    $fl = $row->addChild("FL", $value);
+                    $fl->addAttribute("val", $name);
                 }
             }
         }
 
-        $xml .= '</row>'."\n";
-        $xml .= '</'.$module.'>';
-
-        return $xml;
+        return $module;
     }
 
     /**
