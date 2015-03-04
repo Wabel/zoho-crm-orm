@@ -2,6 +2,7 @@
 
 use GuzzleHttp\Client;
 use Wabel\Zoho\CRM\Exception\ZohoCRMException;
+use Wabel\Zoho\CRM\Exception\ZohoCRMResponseException;
 use Wabel\Zoho\CRM\Request\Response;
 use Wabel\Zoho\CRM\Wrapper\Element;
 
@@ -416,7 +417,7 @@ class ZohoClient
         if ($zohoResponse->ifSuccess()) {
             return $zohoResponse;
         } else {
-            throw new ZohoCRMException($zohoResponse);
+            throw new ZohoCRMResponseException($zohoResponse);
         }
     }
 
@@ -481,74 +482,4 @@ class ZohoClient
 
         return ["params" => $params, "body" => $body];
     }
-
-    /**
-     * Convert an entity into XML
-     *
-     * @param  Element $entity Element with values on fields setted
-     * @return string  XML created
-     * @todo
-     - Add iteration for multiples entities and creation of xml with collection
-     */
-    public function mapEntity(Element $entity, $no = null)
-    {
-        if (!$entity->getModule()) {
-            throw new \Exception("Invalid module returned by entity", 1);
-        }
-        $element = new \ReflectionObject($entity);
-        $properties = $element->getProperties();
-        $xml = $no ? '' : '<'.$entity->getModule().'>'."\n";
-        $xml .= '<row no="'.($no ? $no : '1').'">'."\n";
-        foreach ($properties as $property) {
-            $propName = $property->getName();
-            $propValue = $entity->$propName;
-
-            if (!empty($propValue) && $propName !== "module") {
-
-                // Dealing with the customs zoho attributes
-                if ($propName === "customs" && is_array($propValue)) {
-                    foreach ($propValue as $name => $value) {
-                        if (htmlspecialchars($value) !== $value) {
-                            $value = htmlspecialchars($value);
-                        }
-                        $xml .= '<FL val="'.str_replace(['_', 'N36', 'E5F'], [' ', '$', '_'], $name).'">'.$value.'</FL>'."\n";
-                    }
-                } else {
-                    if (htmlspecialchars($propValue) !== $propValue && $propName !== "Account Name") {
-                        $propValue = htmlspecialchars($propValue);
-                    }
-                    $xml .= '<FL val="'.str_replace(['_', 'N36', 'E5F'], [' ', '$', '_'], $propName).'">'.$propValue.'</FL>'."\n";
-                }
-            }
-        }
-        $xml .= '</row>'."\n";
-        $xml .= $no ? '' :  '</'.$entity->getModule().'>';
-
-        return $xml;
-    }
-
-    /**
-     * Convert an array of entities into XML
-     *
-     * @param  Element[] $entities Element with values on fields setted
-     * @return string    XML created
-     */
-    public function mapEntities(array $entities)
-    {
-        if (count($entities) === 0) {
-            throw new ZohoCRMException("mapEntities called with empty array.");
-        }
-        $firstEntity = reset($entities);
-        $module = $firstEntity->getModule();
-
-        $no = 1;
-        $xml = '<'.$module.'>'."\n";
-        foreach ($entities as $entity) {
-            $xml .= $this->mapEntity($entity, $no++);
-        }
-        $xml .= '</'.$module.'>';
-
-        return $xml;
-    }
 }
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
