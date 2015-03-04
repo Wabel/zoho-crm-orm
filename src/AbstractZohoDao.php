@@ -12,6 +12,9 @@ use Wabel\Zoho\CRM\Wrapper\Element;
  */
 abstract class AbstractZohoDao
 {
+    const ON_DUPLICATE_THROW = 1;
+    const ON_DUPLICATE_MERGE = 2;
+
     /**
      * @var ZohoClient
      */
@@ -393,13 +396,11 @@ abstract class AbstractZohoDao
             $params['isApproval'] = $isApproval;
         }
 
-        // The XMLData should be sent via post
-        $params['postXMLData'] = true;
-
         // If there are several beans to insert, we
-        $params['version'] = is_array($beans) ? 4 : 1;
+        //$params['version'] = is_array($beans) ? 4 : 1;
+        $params['version'] = 4;
         // TODO Convert beans to XML to inject them in the request
-        $xmlData = $beans;
+        $xmlData = $this->toXml($beans);
 
         $response = $this->zohoClient->call($module, 'insertRecords', $params, $xmlData);
 
@@ -425,7 +426,7 @@ abstract class AbstractZohoDao
      * @return Response The Response object
      * @todo Use full SimpleXMLRequest in data to check number easily and set default parameters
      */
-    public function updateRecords($beans, $id = null, $wfTrigger = null)
+    public function updateRecords(array $beans, $wfTrigger = null)
     {
         $module = $this->getModule();
         $params['newFormat'] = 1;
@@ -434,22 +435,10 @@ abstract class AbstractZohoDao
             $params['wfTrigger'] = $wfTrigger;
         }
 
-        // If there's only one record to update, we set the ID in the get parameters
-        if (!is_array($beans)) {
-            $params['id'] = $id;
-            $params['version'] = 1;
-
-            if(!$id) {
-                throw new \InvalidArgumentException('Record Id is required and cannot be empty.');
-            }
-        }
-        else {
-            $params['version'] = 4;
-            $options['postXMLData'] = true;
-        }
+        $params['version'] = 4;
         $params['newFormat'] = 1;
-        // TODO Convert beans to XML to inject them in the request
-        $xmlData = $beans;
+
+        $xmlData = $this->toXml($beans);
 
         return $this->zohoClient->call($module, 'updateRecords', $params, $xmlData);
     }
@@ -506,5 +495,34 @@ abstract class AbstractZohoDao
     public function getModules()
     {
         return $this->zohoClient->call('Info', 'getModules', []);
+    }
+
+    /**
+     * Saves the bean or array of beans passed in Zoho.
+     * It will perform an insert if the bean has no ZohoID or an update if the bean has a ZohoID.
+     *
+     * @param array|object $beans A bean or an array of beans.
+     *
+     * TODO: isApproval is not used by each module.
+     */
+    public function save($beans, $wfTrigger = false, $duplicateCheck = self::ON_DUPLICATE_THROW, $isApproval = false)
+    {
+        if (!is_array($beans)) {
+            $beans = [ $beans ];
+        }
+
+        $insertRecords = [];
+        $updateRecords = [];
+
+        foreach ($beans as $bean) {
+            if ($bean->getSohoId()) {
+                $updateRecords[] = $bean;
+            } else {
+                $insertRecords[] = $bean;
+            }
+        }
+
+        $this->updateRecords($updateRecords);
+        $this->insertRecords($insertRecords, $wfTrigger, $duplicateCheck, $isApproval);
     }
 }
