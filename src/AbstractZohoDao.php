@@ -17,6 +17,8 @@ abstract class AbstractZohoDao
     const ON_DUPLICATE_MERGE = 2;
 
     /**
+     * The class implementing API methods not directly related to a specific module
+     *
      * @var ZohoClient
      */
     protected $zohoClient;
@@ -33,6 +35,8 @@ abstract class AbstractZohoDao
 
     /**
      * Returns a flat list of all fields.
+     *
+     * @return array The array of field names for a module
      */
     protected function getFlatFields() {
         if ($this->flatFields === null) {
@@ -46,8 +50,9 @@ abstract class AbstractZohoDao
 
     /**
      * Parse a Zoho Response in order to retrieve one or several ZohoBeans from it
-     * @param Response $zohoResponse
-     * @return AbstractZohoBean[]
+     *
+     * @param Response $zohoResponse The response returned by the ZohoClient->call() method
+     * @return AbstractZohoBean[] The array of Zoho Beans parsed from the response
      */
     protected function getBeansFromResponse(Response $zohoResponse) {
 
@@ -102,9 +107,9 @@ abstract class AbstractZohoDao
      * Convert an array of ZohoBeans into a SimpleXMLElement
      *
      * @param $zohoBeans AbstractZohoBean[]
-     * @return \SimpleXMLElement
+     * @return \SimpleXMLElement The SimpleXMLElement containing the XML for a request
      */
-    public function toXml($zohoBeans)
+    protected function toXml($zohoBeans)
     {
         $module = $this->getModule();
 
@@ -178,9 +183,10 @@ abstract class AbstractZohoDao
     /**
      * Implements deleteRecords API method.
      *
-     * @param string $id Id of the record
+     * @param string $id Zoho Id of the record to delete
      *
-     * @return Response The Response object
+     * @return AbstractZohoBean[] The array of Zoho Beans parsed from the response
+     * @throws ZohoCRMResponseException
      */
     public function delete($id)
     {
@@ -195,8 +201,9 @@ abstract class AbstractZohoDao
     /**
      * Implements getRecordById API method.
      *
-     * @param  string   $id      Id of the record
-     * @return
+     * @param  string $id Zoho Id of the record to retrieve
+     * @return AbstractZohoBean[] The array of Zoho Beans parsed from the response
+     * @throws ZohoCRMResponseException
      */
     public function getById($id)
     {
@@ -242,21 +249,12 @@ abstract class AbstractZohoDao
     /**
      * Implements getRecords API method.
      *
-     * @param  array    $params  request parameters
-     *                           selectColumns     String  Module(optional columns) i.e, leads(Last Name,Website,Email) OR All
-     *                           fromIndex	        Integer	Default value 1
-     *                           toIndex	          Integer	Default value 20
-     *                           Maximum value 200
-     *                           sortColumnString	String	If you use the sortColumnString parameter, by default data is sorted in ascending order.
-     *                           sortOrderString	  String	Default value - asc
-     *                           if you want to sort in descending order, then you have to pass sortOrderString=desc.
-     *                           lastModifiedTime	DateTime	Default value: null
-     *                           If you specify the time, modified data will be fetched after the configured time.
-     *                           newFormat         Integer	1 (default) - exclude fields with null values in the response
-     *                           2 - include fields with null values in the response
-     *                           version           Integer	1 (default) - use earlier API implementation
-     *                           2 - use latest API implementation
-     * @return Response The Response object
+     * @param string $id Zoho Id of the record to delete
+     * @param string $parentModule The parent module of the records
+     * @param int $fromIndex The offset from which you want parse Zoho
+     * @param int $toIndex The offset to which you want to parse Zoho
+     * @return AbstractZohoBean[] The array of Zoho Beans parsed from the response
+     * @throws ZohoCRMResponseException
      */
     public function getRelatedRecords($id, $parentModule, $fromIndex = null, $toIndex = null)
     {
@@ -280,20 +278,13 @@ abstract class AbstractZohoDao
     /**
      * Implements searchRecords API method.
      *
-     * @param string $searchCondition search condition in the format (fieldName:searchString)
-     *                                e.g. (Email:*@sample.com*)
-     * @param array  $params          request parameters
-     *                                selectColumns String  Module(columns) e.g. Leads(Last Name,Website,Email)
-     *                                Note: do not use any extra spaces when listing column names
-     *                                fromIndex	    Integer	Default value 1
-     *                                toIndex	      Integer	Default value 20
-     *                                Maximum value 200
-     *                                newFormat     Integer 1 (default) - exclude fields with null values in the response
-     *                                2 - include fields with null values in the response
-     *                                version       Integer 1 (default) - use earlier API implementation
-     *                                2 - use latest API implementation
-     *
-     * @return Response The Response object
+     * @param string $searchCondition The search criteria formatted like
+     * @param int $fromIndex The offset from which you want parse Zoho
+     * @param int $toIndex The offset to which you want to parse Zoho
+     * @param \DateTime $lastModifiedTime
+     * @param string $selectColumns The list
+     * @return AbstractZohoBean[] The array of Zoho Beans parsed from the response
+     * @throws ZohoCRMResponseException
      */
     public function searchRecords($searchCondition = null, $fromIndex = null, $toIndex = null, \DateTime $lastModifiedTime = null, $selectColumns = null)
     {
@@ -336,16 +327,9 @@ abstract class AbstractZohoDao
     /**
      * Implements getUsers API method.
      *
-     *  @param string  $type       type of the user to return. Possible values:
-     *                              AllUsers - all users (both active and inactive)
-     *                              ActiveUsers - only active users
-     *                              DeactiveUsers - only deactivated users
-     *                              AdminUsers - all users with admin privileges
-     *                              ActiveConfirmedAdmins - users with admin privileges that are confirmed
-     * @param integer $newFormat 1 (default) - exclude fields with null values in the response
-     *                           2 - include fields with null values in the response
-     *
-     * @return Response The Response object
+     * @param string $type The type of users you want retrieve (among AllUsers, ActiveUsers, DeactiveUsers, AdminUsers and ActiveConfirmedAdmins)
+     * @return AbstractZohoBean[] The array of Zoho Beans parsed from the response
+     * @throws ZohoCRMResponseException
      */
     public function getUsers($type = 'AllUsers')
     {
@@ -371,25 +355,12 @@ abstract class AbstractZohoDao
     /**
      * Implements insertRecords API method.
      *
-     * @param array $data   xmlData represented as an array
-     *                      array will be converted into XML before sending the request
-     * @param array $params request parameters
-     *                      wfTrigger	      Boolean	Set value as true to trigger the workflow rule
-     *                      while inserting record into CRM account. By default, this parameter is false.
-     *                      duplicateCheck	Integer	Set value as "1" to check the duplicate records and throw an
-     *                      error response or "2" to check the duplicate records, if exists, update the same.
-     *                      isApproval	    Boolean	By default, records are inserted directly . To keep the records in approval mode,
-     *                      set value as true. You can use this parameters for Leads, Contacts, and Cases module.
-     *                      newFormat       Integer	1 (default) - exclude fields with null values in the response
-     *                      2 - include fields with null values in the response
-     *                      version         Integer	1 (default) - use earlier API implementation
-     *                      2 - use latest API implementation
-     *                      4 - enable duplicate check functionality for multiple records.
-     *                      It's recommended to use version 4 for inserting multiple records
-     *                      even when duplicate check is turned off.
-     *
-     * @param  array    $options Options to add for configurations [optional]
-     * @return Response The Response object
+     * @param AbstractZohoBean[] $beans The Zoho Beans to insert in the CRM
+     * @param bool $wfTrigger Whether or not the call should trigger the workflows related to a "created" event
+     * @param int $duplicateCheck 1 : Throwing error when a duplicate is found; 2 : Merging with existing duplicate
+     * @param bool $isApproval Whether or not to push the record into an approval sandbox first
+     * @return AbstractZohoBean[] The array of Zoho Beans parsed from the response
+     * @throws ZohoCRMResponseException
      */
     public function insertRecords($beans, $wfTrigger = null, $duplicateCheck = null, $isApproval = null)
     {

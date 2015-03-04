@@ -4,6 +4,8 @@ use Wabel\Zoho\CRM\Request\Response;
 /**
  * Zoho CRM Exception.
  *
+ * Error thrown when using the API
+ *
  * @package Wabel\Zoho\CRM\Exception
  * @version 1.0.0
  */
