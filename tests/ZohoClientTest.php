@@ -57,6 +57,26 @@ class ZohoClientTest extends PHPUnit_Framework_TestCase
         $contactBean->setEmail($email);
         $contactZohoDao->save($contactBean);
 
+        // Now, let's test multiple saves at once.
+        $contactBean2 = new \TestNamespace\Contact();
+        $contactBean3 = new \TestNamespace\Contact();
+        $lastName2 = uniqid("Test");
+        $lastName3 = uniqid("Test");
+        $contactBean2->setLastName($lastName2);
+        $contactBean3->setLastName($lastName3);
+        $contactBean2->setFirstName("TestMultipleUser");
+        $contactBean3->setFirstName("TestMultipleUser");
+        $contactZohoDao->save([$contactBean2, $contactBean3]);
+
+        // And multiple updates at once:
+        $email2 = $lastName2."@test.com";
+        $email3 = $lastName3."@test.com";
+        $contactBean2->setEmail($email2);
+        $contactBean3->setEmail($email3);
+        $contactZohoDao->save([$contactBean2, $contactBean3]);
+
+
+
         // We need to wait for Zoho to index the record.
         sleep(120);
 
@@ -71,7 +91,11 @@ class ZohoClientTest extends PHPUnit_Framework_TestCase
             $this->assertEquals("M&M's épatant", $record->getTitle());
         }
 
-
         $contactZohoDao->delete($contactBean->getZohoId());
+
+        $records = $contactZohoDao->searchRecords("(First Name:TestMultipleUser)");
+        foreach ($records as $record) {
+            $contactZohoDao->delete($record->getZohoId());
+        }
     }
 }

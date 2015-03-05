@@ -17,4 +17,15 @@ interface ZohoBeanInterface {
      * @param string $id
      */
     public function setZohoId($id);
+
+    /**
+     * @return \DateTime The last time the record was modified in Zoho
+     */
+    public function getModifiedTime();
+
+    /**
+     * Sets the last time the record was modified in Zoho
+     * @param \DateTime $time
+     */
+    public function setModifiedTime(\DateTime $time);
 }
