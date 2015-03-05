@@ -74,6 +74,7 @@ abstract class AbstractZohoDao
                 $id = $record['Id'];
             }
             $bean->setZohoId($id);
+            $bean->setCreatedTime(\DateTime::createFromFormat('Y-m-d H:i:s', $record['Created Time']));
             $bean->setModifiedTime(\DateTime::createFromFormat('Y-m-d H:i:s', $record['Modified Time']));
 
             foreach ($record as $key=>$value) {
@@ -283,6 +284,10 @@ abstract class AbstractZohoDao
             }
 
             $bean->setZohoId($record['Id']);
+            $bean->setCreatedTime(\DateTime::createFromFormat('Y-m-d H:i:s', $record['Created Time']));
+            if ($record['Modified Time']) {
+                $bean->setModifiedTime(\DateTime::createFromFormat('Y-m-d H:i:s', $record['Modified Time']));
+            }
 
             $i++;
         }

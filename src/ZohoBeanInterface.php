@@ -19,6 +19,17 @@ interface ZohoBeanInterface {
     public function setZohoId($id);
 
     /**
+     * @return \DateTime The time the record was created in Zoho
+     */
+    public function getCreatedTime();
+
+    /**
+     * Sets the time the record was created in Zoho
+     * @param \DateTime $time
+     */
+    public function setCreatedTime(\DateTime $time);
+
+    /**
      * @return \DateTime The last time the record was modified in Zoho
      */
     public function getModifiedTime();
