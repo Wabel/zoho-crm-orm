@@ -184,11 +184,20 @@ abstract class AbstractZohoDao
      */
     public function getById($id)
     {
-        $module = $this->getModule();
+        try {
+            $module = $this->getModule();
 
-        $response = $this->zohoClient->getRecordById($module, $id);
+            $response = $this->zohoClient->getRecordById($module, $id);
 
-        return $this->getBeansFromResponse($response);
+            return $this->getBeansFromResponse($response);
+        } catch (ZohoCRMResponseException $e) {
+            // No records found? Let's return an empty array!
+            if ($e->getCode() == 4422) {
+                return array();
+            } else {
+                throw $e;
+            }
+        }
     }
 
     /**
@@ -200,17 +209,31 @@ abstract class AbstractZohoDao
      * @param $sortColumnString
      * @param $sortOrderString
      * @param \DateTime $lastModifiedTime
-     * @return Response The Response object
+     * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
      * @throws ZohoCRMResponseException
      */
     public function getRecords($selectColumns = null, $fromIndex = null, $toIndex = 200, $sortColumnString = null, $sortOrderString = null, \DateTime $lastModifiedTime = null)
     {
-        $response = $this->zohoClient->getRecords($this->getModule(), $selectColumns, $fromIndex, $toIndex, $sortColumnString, $sortOrderString, $lastModifiedTime);
+        try {
+            $response = $this->zohoClient->getRecords($this->getModule(), $selectColumns, $fromIndex, $toIndex, $sortColumnString, $sortOrderString, $lastModifiedTime);
 
-        if(count($response->getRecords()) == count($toIndex))
-            return array_merge(
-                $this->getBeansFromResponse($response),
-                $this->getRecords($selectColumns, $fromIndex));
+            if(count($response->getRecords()) == count($toIndex)) {
+                return array_merge(
+                    $this->getBeansFromResponse($response),
+                    $this->getRecords($selectColumns, $toIndex + 1, $toIndex + 200, $sortColumnString, $sortOrderString, $lastModifiedTime)
+                );
+            }
+            else {
+                return $this->getBeansFromResponse($response);
+            }
+        } catch (ZohoCRMResponseException $e) {
+            // No records found? Let's return an empty array!
+            if ($e->getCode() == 4422) {
+                return array();
+            } else {
+                throw $e;
+            }
+        }
     }
 
     /**
@@ -223,11 +246,28 @@ abstract class AbstractZohoDao
      * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
      * @throws ZohoCRMResponseException
      */
-    public function getRelatedRecords($id, $parentModule, $fromIndex = null, $toIndex = null)
+    public function getRelatedRecords($id, $parentModule, $fromIndex = null, $toIndex = 200)
     {
-        $response = $this->zohoClient->getRelatedRecords($this->getModule(), $id, $parentModule, $fromIndex, $toIndex);
+        try {
+            $response = $this->zohoClient->getRelatedRecords($this->getModule(), $id, $parentModule, $fromIndex, $toIndex);
 
-        return $this->getBeansFromResponse($response);
+            if(count($response->getRecords()) == count($toIndex)) {
+                return array_merge(
+                    $this->getBeansFromResponse($response),
+                    $this->getRelatedRecords($id, $parentModule, $toIndex + 1, $toIndex + 200)
+                );
+            }
+            else {
+                return $this->getBeansFromResponse($response);
+            }
+        } catch (ZohoCRMResponseException $e) {
+            // No records found? Let's return an empty array!
+            if ($e->getCode() == 4422) {
+                return array();
+            } else {
+                throw $e;
+            }
+        }
     }
 
     /**
@@ -241,12 +281,20 @@ abstract class AbstractZohoDao
      * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
      * @throws ZohoCRMResponseException
      */
-    public function searchRecords($searchCondition = null, $fromIndex = 1, $toIndex = null, \DateTime $lastModifiedTime = null, $selectColumns = null)
+    public function searchRecords($searchCondition = null, $fromIndex = 1, $toIndex = 200, \DateTime $lastModifiedTime = null, $selectColumns = null)
     {
         try {
             $response = $this->zohoClient->searchRecords($this->getModule(), $searchCondition, $fromIndex, $toIndex, $lastModifiedTime, $selectColumns);
 
-            return $this->getBeansFromResponse($response);
+            if(count($response->getRecords()) == count($toIndex)) {
+                return array_merge(
+                    $this->getBeansFromResponse($response),
+                    $this->searchRecords($searchCondition, $toIndex + 1, $toIndex + 200, $lastModifiedTime, $selectColumns)
+                );
+            }
+            else {
+                return $this->getBeansFromResponse($response);
+            }
         } catch (ZohoCRMResponseException $e) {
             // No records found? Let's return an empty array!
             if ($e->getCode() == 4422) {
@@ -268,18 +316,23 @@ abstract class AbstractZohoDao
      */
     public function insertRecords($beans, $wfTrigger = null, $duplicateCheck = null, $isApproval = null)
     {
-        $xmlData = $this->toXml($beans);
+        $records = [];
 
-        $response = $this->zohoClient->insertRecords($this->getModule(), $xmlData, $wfTrigger, $duplicateCheck, $isApproval);
+        // We can't pass more than 100 records to Zoho, so we split the request into pieces of 100
+        foreach(array_chunk($beans, 100) AS $beanPool) {
+            $xmlData = $this->toXml($beanPool);
 
-        $records = $response->getRecords();
+            $response = $this->zohoClient->insertRecords($this->getModule(), $xmlData, $wfTrigger, $duplicateCheck, $isApproval);
+
+            $records = array_merge($records, $response->getRecords());
+        }
         if (count($records) != count($beans)) {
             throw new ZohoCRMException("Error while inserting beans in Zoho. ".count($beans)." passed in parameter, but ".count($records)." returned.");
         }
 
         $i = 1;
         foreach ($beans as $bean) {
-            $record = $records[$i];
+            $record = $records[$i-1];
 
             if (substr($record['code'], 0, 1) != "2") {
                 // This field is probably in error!
@@ -307,11 +360,16 @@ abstract class AbstractZohoDao
     public function updateRecords(array $beans, $wfTrigger = null)
     {
 
-        $xmlData = $this->toXml($beans);
+        $records = [];
 
-        $response = $this->zohoClient->updateRecords($this->getModule(), $xmlData, null, $wfTrigger);
+        // We can't pass more than 100 records to Zoho, so we split the request into pieces of 100
+        foreach(array_chunk($beans, 100) AS $beanPool) {
+            $xmlData = $this->toXml($beanPool);
 
-        $records = $response->getRecords();
+            $response = $this->zohoClient->updateRecords($this->getModule(), $xmlData, null, $wfTrigger);
+
+            $records = array_merge($records, $response->getRecords());
+        }
         if (count($records) != count($beans)) {
             throw new ZohoCRMException("Error while inserting beans in Zoho. ".count($beans)." passed in parameter, but ".count($records)." returned.");
         }
