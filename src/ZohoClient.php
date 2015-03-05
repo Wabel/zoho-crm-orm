@@ -63,48 +63,19 @@ class ZohoClient
     /**
      * Implements convertLead API method.
      *
-     * @param  string   $module  The Zoho module to query
-     * @param  string   $leadId  Id of the lead
-     * @param  array    $data    xmlData represented as an array
-     *                           array will be converted into XML before sending the request
-     * @param  array    $params  request parameters
-     *                           newFormat 1 (default) - exclude fields with null values in the response
-     *                           2 - include fields with null values in the response
-     *                           version   1 (default) - use earlier API implementation
-     *                           2 - use latest API implementation
-     * @return Response The Response object
+     * @param $leadId
+     * @param $data
+     * @param array $params
+* @return Response The Response object
+     * @throws ZohoCRMResponseException
      */
-    public function convertLead($module, $leadId, $data, $params = array())
+    public function convertLead($leadId, $data, $params = array())
     {
+        $module = "Leads";
         $params['leadId'] = $leadId;
         $params['newFormat'] = 1;
 
         return $this->call($module, 'convertLead', $params, $data);
-    }
-
-    /**
-     * Implements getCVRecords API method.
-     *
-     * @param  string   $name    name of the Custom View
-     * @param  array    $params  request parameters
-     *                           selectColumns     String  Module(optional columns) i.e, leads(Last Name,Website,Email) OR All
-     *                           fromIndex         Integer Default value 1
-     *                           toIndex           Integer Default value 20
-     *                           Maximum value 200
-     *                           lastModifiedTime  DateTime  Default value: null
-     *                           If you specify the time, modified data will be fetched after the configured time.
-     *                           newFormat         Integer 1 (default) - exclude fields with null values in the response
-     *                           2 - include fields with null values in the response
-     *                           version           Integer 1 (default) - use earlier API implementation
-     *                           2 - use latest API implementation
-     * @return Response The Response object
-     */
-    public function getCVRecords($module, $name, $params = array())
-    {
-        $params['cvName'] = $name;
-        $params['newFormat'] = 1;
-
-        return $this->call($module, 'getCVRecords', $params);
     }
 
     /**
@@ -142,15 +113,10 @@ class ZohoClient
      *
      * @param  string $module The module to use
      * @param  string $id Id of the record
-     * @param  array $params request parameters
-     *                           newFormat 1 (default) - exclude fields with null values in the response
-     *                           2 - include fields with null values in the response
-     *                           version   1 (default) - use earlier API implementation
-     *                           2 - use latest API implementation
      * @return Response The Response object
      * @throws ZohoCRMResponseException
      */
-    public function getRecordById($module, $id, $params = array())
+    public function getRecordById($module, $id)
     {
         $params['id'] = $id;
         if (empty($params['newFormat'])) {
@@ -163,25 +129,38 @@ class ZohoClient
     /**
      * Implements getRecords API method.
      *
-     * @param  array    $params  request parameters
-     *                           selectColumns     String  Module(optional columns) i.e, leads(Last Name,Website,Email) OR All
-     *                           fromIndex	        Integer	Default value 1
-     *                           toIndex	          Integer	Default value 20
-     *                           Maximum value 200
-     *                           sortColumnString	String	If you use the sortColumnString parameter, by default data is sorted in ascending order.
-     *                           sortOrderString	  String	Default value - asc
-     *                           if you want to sort in descending order, then you have to pass sortOrderString=desc.
-     *                           lastModifiedTime	DateTime	Default value: null
-     *                           If you specify the time, modified data will be fetched after the configured time.
-     *                           newFormat         Integer	1 (default) - exclude fields with null values in the response
-     *                           2 - include fields with null values in the response
-     *                           version           Integer	1 (default) - use earlier API implementation
-     *                           2 - use latest API implementation
+     * @param $module
+     * @param $selectColumns
+     * @param $fromIndex
+     * @param $toIndex
+     * @param $sortColumnString
+     * @param $sortOrderString
+     * @param \DateTime $lastModifiedTime
      * @return Response The Response object
+     * @throws ZohoCRMResponseException
      */
-    public function getRecords($module, $params = array())
+    public function getRecords($module, $selectColumns = null, $fromIndex = null, $toIndex = null, $sortColumnString = null, $sortOrderString = null, $lastModifiedTime = null)
     {
         $params['newFormat'] = 1;
+        $params['version'] = 1;
+        if($selectColumns) {
+            $params['selectColumns'] = $fromIndex;
+        }
+        if($fromIndex) {
+            $params['fromIndex'] = $toIndex;
+        }
+        if($toIndex) {
+            $params['toIndex'] = $toIndex;
+        }
+        if($sortColumnString) {
+            $params['sortColumnString'] = $toIndex;
+        }
+        if($sortOrderString) {
+            $params['sortOrderString'] = $toIndex;
+        }
+        if($lastModifiedTime) {
+            $params['lastModifiedTime'] = $lastModifiedTime->format("Y-m-j H:i:s");
+        }
 
         return $this->call($module, 'getRecords', $params);
     }
@@ -189,27 +168,25 @@ class ZohoClient
     /**
      * Implements getRecords API method.
      *
-     * @param  array    $params  request parameters
-     *                           selectColumns     String  Module(optional columns) i.e, leads(Last Name,Website,Email) OR All
-     *                           fromIndex	        Integer	Default value 1
-     *                           toIndex	          Integer	Default value 20
-     *                           Maximum value 200
-     *                           sortColumnString	String	If you use the sortColumnString parameter, by default data is sorted in ascending order.
-     *                           sortOrderString	  String	Default value - asc
-     *                           if you want to sort in descending order, then you have to pass sortOrderString=desc.
-     *                           lastModifiedTime	DateTime	Default value: null
-     *                           If you specify the time, modified data will be fetched after the configured time.
-     *                           newFormat         Integer	1 (default) - exclude fields with null values in the response
-     *                           2 - include fields with null values in the response
-     *                           version           Integer	1 (default) - use earlier API implementation
-     *                           2 - use latest API implementation
-     * @return Response The Response object
+     * @param $module
+     * @param $id
+     * @param $parentModule
+     * @param null $fromIndex
+     * @param null $toIndex
+     * @return Response
+     * @throws ZohoCRMResponseException
      */
-    public function getRelatedRecords($module, $id, $parentModule, $params = array())
+    public function getRelatedRecords($module, $id, $parentModule, $fromIndex = null, $toIndex = null)
     {
         $params["id"] = $id;
         $params["parentModule"] = $parentModule;
         $params['newFormat'] = 1;
+        if($fromIndex) {
+            $params['fromIndex'] = $fromIndex;
+        }
+        if($toIndex) {
+            $params['toIndex'] = $toIndex;
+        }
 
         return $this->call($module, 'getRelatedRecords', $params);
     }
@@ -217,24 +194,35 @@ class ZohoClient
     /**
      * Implements searchRecords API method.
      *
-     * @param string $searchCondition search condition in the format (fieldName:searchString)
-     *                                e.g. (Email:*@sample.com*)
-     * @param array  $params          request parameters
-     *                                selectColumns String  Module(columns) e.g. Leads(Last Name,Website,Email)
-     *                                Note: do not use any extra spaces when listing column names
-     *                                fromIndex	    Integer	Default value 1
-     *                                toIndex	      Integer	Default value 20
-     *                                Maximum value 200
-     *                                newFormat     Integer 1 (default) - exclude fields with null values in the response
-     *                                2 - include fields with null values in the response
-     *                                version       Integer 1 (default) - use earlier API implementation
-     *                                2 - use latest API implementation
-     *
-     * @return Response The Response object
+     * @param $module
+     * @param null $searchCondition
+     * @param null $fromIndex
+     * @param null $toIndex
+     * @param \DateTime $lastModifiedTime
+     * @param null $selectColumns
+     * @return Response
+     * @throws ZohoCRMResponseException
      */
-    public function searchRecords($module, $searchCondition, $params = array())
+    public function searchRecords($module, $searchCondition = null, $fromIndex = null, $toIndex = null, $lastModifiedTime = null, $selectColumns = null)
     {
-        $params['criteria'] = $searchCondition;
+        if ($searchCondition) {
+            $params['criteria'] = $searchCondition;
+        } else {
+            $params['criteria'] = "";
+        }
+        if ($fromIndex) {
+            $params['fromIndex'] = $fromIndex;
+        }
+        if ($toIndex) {
+            $params['toIndex'] = $toIndex;
+        }
+        if ($lastModifiedTime) {
+            $params['lastModifiedTime'] = $lastModifiedTime->format('Y-m-d H:i:s');
+        }
+        if ($selectColumns) {
+            $params['selectColumns'] = $selectColumns;
+        }
+
         $params['newFormat'] = 1;
 
         return $this->call($module, 'searchRecords', $params);
@@ -243,21 +231,25 @@ class ZohoClient
     /**
      * Implements getUsers API method.
      *
-     *  @param string  $type       type of the user to return. Possible values:
-     *                              AllUsers - all users (both active and inactive)
-     *                              ActiveUsers - only active users
-     *                              DeactiveUsers - only deactivated users
-     *                              AdminUsers - all users with admin privileges
-     *                              ActiveConfirmedAdmins - users with admin privileges that are confirmed
-     * @param integer $newFormat 1 (default) - exclude fields with null values in the response
-     *                           2 - include fields with null values in the response
-     *
-     * @return Response The Response object
+     * @param string $type The type of users you want retrieve (among AllUsers, ActiveUsers, DeactiveUsers, AdminUsers and ActiveConfirmedAdmins)
+     * @return Response The array of Zoho Beans parsed from the response
+     * @throws ZohoCRMResponseException
      */
-    public function getUsers($type = 'AllUsers', $newFormat = 1)
+    public function getUsers($type = 'AllUsers')
     {
-        $params['type'] = $type;
-        $params['newFormat'] = $newFormat;
+        switch($type) {
+            case 'AllUsers':
+            case 'ActiveUsers':
+            case 'DeactiveUsers':
+            case 'AdminUsers':
+            case 'ActiveConfirmedAdmins':
+                $params['type'] = $type;
+                break;
+            default :
+                $params['type'] = 'AllUsers';
+                break;
+        }
+        $params['newFormat'] = 1;
 
         return $this->call('Users', 'getUsers', $params);
     }
@@ -265,101 +257,64 @@ class ZohoClient
     /**
      * Implements insertRecords API method.
      *
-     * @param array $data   xmlData represented as an array
-     *                      array will be converted into XML before sending the request
-     * @param array $params request parameters
-     *                      wfTrigger	      Boolean	Set value as true to trigger the workflow rule
-     *                      while inserting record into CRM account. By default, this parameter is false.
-     *                      duplicateCheck	Integer	Set value as "1" to check the duplicate records and throw an
-     *                      error response or "2" to check the duplicate records, if exists, update the same.
-     *                      isApproval	    Boolean	By default, records are inserted directly . To keep the records in approval mode,
-     *                      set value as true. You can use this parameters for Leads, Contacts, and Cases module.
-     *                      newFormat       Integer	1 (default) - exclude fields with null values in the response
-     *                      2 - include fields with null values in the response
-     *                      version         Integer	1 (default) - use earlier API implementation
-     *                      2 - use latest API implementation
-     *                      4 - enable duplicate check functionality for multiple records.
-     *                      It's recommended to use version 4 for inserting multiple records
-     *                      even when duplicate check is turned off.
-     *
-     * @param  array    $options Options to add for configurations [optional]
-     * @return Response The Response object
-     * @todo Use full SimpleXMLRequest in data to check number easily and set default parameters
+     * @param $module
+     * @param \SimpleXMLElement$xmlData
+     * @param null $wfTrigger
+     * @param null $duplicateCheck
+     * @param null $isApproval
+     * @return Response
+     * @throws ZohoCRMResponseException
      */
-    public function insertRecords($module, $data, $params = array(), $options = array())
+    public function insertRecords($module, $xmlData, $wfTrigger = null, $duplicateCheck = null, $isApproval = null)
     {
-        if (!isset($params['duplicateCheck'])) {
-            $params['duplicateCheck'] = 2;
+        if($wfTrigger) {
+            $params['wfTrigger'] = $wfTrigger;
         }
-        if (!$params['version']) {
-            // Version 4 is mandatory for updating multiple records.
-        $params['version'] = 4;
+        if($duplicateCheck) {
+            $params['duplicateCheck'] = $duplicateCheck;
+        }
+        if($isApproval) {
+            $params['isApproval'] = $isApproval;
         }
         $params['newFormat'] = 1;
+        $params['version'] = 4;
 
-        return $this->call($module, 'insertRecords', $params, $data, $options);
+        return $this->call($module, 'insertRecords', $params, ["xmlData" => $xmlData->asXML()]);
     }
 
     /**
      * Implements updateRecords API method.
      *
-     * @param string $id     unique ID of the record to be updated
-     * @param array  $data   xmlData represented as an array
-     *                       array will be converted into XML before sending the request
-     * @param array  $params request parameters
-     *                       wfTrigger    Boolean   Set value as true to trigger the workflow rule
-     *                       while inserting record into CRM account. By default, this parameter is false.
-     *                       newFormat    Integer   1 (default) - exclude fields with "null" values while updating data
-     *                       2 - include fields with "null" values while updating data
-     *                       version      Integer   1 (default) - use earlier API implementation
-     *                       2 - use latest API implementation
-     *                       4 - update multiple records in a single API method call
-     *
-     * @param  array    $options Options to add for configurations [optional]
-     * @return Response The Response object
-     * @todo Use full SimpleXMLRequest in data to check number easily and set default parameters
+     * @param $module
+     * @param \SimpleXMLElement $xmlData
+     * @param null $id
+     * @param null $wfTrigger
+     * @return Response
+     * @throws ZohoCRMResponseException
      */
-    public function updateRecords($module, $data, $id = null, $params = array(), $options = array())
+    public function updateRecords($module, $xmlData, $id = null, $wfTrigger = null)
     {
-        if ($id) {
-            $params['id'] = $id;
-            $params['version'] = isset($params['version']) ? $params['version'] : 1;
-        } elseif (!isset($params['version']) || $params['version'] == 4) {
-            $params['version'] = 4;
-            if (!isset($options['postXMLData'])) {
-                $options['postXMLData'] = true;
-            }
-        } else {
-            throw new \InvalidArgumentException('Record Id is required and cannot be empty.');
-        }
-        $params['newFormat'] = 1;
 
-        return $this->call($module, 'updateRecords', $params, $data, $options);
+        $params['version'] = 4;
+        $params['newFormat'] = 1;
+        if($wfTrigger) {
+            $params['wfTrigger'] = $wfTrigger;
+        }
+
+        return $this->call($module, 'updateRecords', $params, ["xmlData" => $xmlData->asXML()]);
     }
 
     /**
      * Implements uploadFile API method.
      *
-     * @param string $id unique ID of the record to be updated
-     *
-     * @param file path $content Pass the File Input Stream of the file
-     *
-     * @param array $params request parameters
-     *                      wfTrigger    Boolean   Set value as true to trigger the workflow rule
-     *                      while inserting record into CRM account. By default, this parameter is false.
-     *                      newFormat    Integer   1 (default) - exclude fields with "null" values while updating data
-     *                      2 - include fields with "null" values while updating data
-     *                      version      Integer   1 (default) - use earlier API implementation
-     *                      2 - use latest API implementation
-     *                      4 - update multiple records in a single API method call
-     *
-     * @return Response The Response object
+     * @param $module
+     * @param $id
+     * @param $content
+     * @return Response
+     * @throws ZohoCRMResponseException
      */
-    public function uploadFile($module, $id, $content, $params = array())
+    public function uploadFile($module, $id, $content)
     {
-        if (empty($id)) {
-            throw new \InvalidArgumentException('Record Id is required and cannot be empty.');
-        }
         $params['id'] = $id;
         $params['content'] = $content;
 
@@ -369,15 +324,13 @@ class ZohoClient
     /**
      * Implements downloadFile API method.
      *
-     * @param string $id unique ID of the attachment
-     *
-     * @return Response The Response object
+     * @param $module
+     * @param $id
+     * @return Response
+     * @throws ZohoCRMResponseException
      */
-    public function downloadFile($module, $id, $params = array())
+    public function downloadFile($module, $id)
     {
-        if (empty($id)) {
-            throw new \InvalidArgumentException('Record Id is required and cannot be empty.');
-        }
         $params['id'] = $id;
 
         return $this->call($module, 'downloadFile', $params);

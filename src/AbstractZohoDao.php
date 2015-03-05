@@ -163,28 +163,6 @@ abstract class AbstractZohoDao
     }
 
     /**
-     * Implements convertLead API method.
-     *
-     * @param  string   $module  The Zoho module to query
-     * @param  string   $leadId  Id of the lead
-     * @param  array    $data    xmlData represented as an array
-     *                           array will be converted into XML before sending the request
-     * @param  array    $params  request parameters
-     *                           newFormat 1 (default) - exclude fields with null values in the response
-     *                           2 - include fields with null values in the response
-     *                           version   1 (default) - use earlier API implementation
-     *                           2 - use latest API implementation
-     * @return Response The Response object
-     */
-    /*public function convertLead($module, $leadId, $data, $params = array())
-    {
-        $params['leadId'] = $leadId;
-        $params['newFormat'] = 1;
-
-        return $this->call($module, 'convertLead', $params, $data);
-    }*/
-
-    /**
      * Implements deleteRecords API method.
      *
      * @param string $id Zoho Id of the record to delete
@@ -210,35 +188,26 @@ abstract class AbstractZohoDao
         $response = $this->zohoClient->getRecordById($module, $id);
 
         return $this->getBeansFromResponse($response);
-
     }
 
     /**
      * Implements getRecords API method.
      *
-     * @param  array    $params  request parameters
-     *                           selectColumns     String  Module(optional columns) i.e, leads(Last Name,Website,Email) OR All
-     *                           fromIndex	        Integer	Default value 1
-     *                           toIndex	          Integer	Default value 20
-     *                           Maximum value 200
-     *                           sortColumnString	String	If you use the sortColumnString parameter, by default data is sorted in ascending order.
-     *                           sortOrderString	  String	Default value - asc
-     *                           if you want to sort in descending order, then you have to pass sortOrderString=desc.
-     *                           lastModifiedTime	DateTime	Default value: null
-     *                           If you specify the time, modified data will be fetched after the configured time.
-     *                           newFormat         Integer	1 (default) - exclude fields with null values in the response
-     *                           2 - include fields with null values in the response
-     *                           version           Integer	1 (default) - use earlier API implementation
-     *                           2 - use latest API implementation
+     * @param $selectColumns
+     * @param $fromIndex
+     * @param $toIndex
+     * @param $sortColumnString
+     * @param $sortOrderString
+     * @param \DateTime $lastModifiedTime
      * @return Response The Response object
+     * @throws ZohoCRMResponseException
      */
-    /*public function getRecords($params = array())
+    public function getRecords($selectColumns = null, $fromIndex = null, $toIndex = null, $sortColumnString = null, $sortOrderString = null, \DateTime $lastModifiedTime = null)
     {
-        $module = $this->getModule();
-        $params['newFormat'] = 1;
+        $response = $this->zohoClient->getRecords($this->getModule(), $selectColumns, $fromIndex, $toIndex, $sortColumnString, $sortOrderString, $lastModifiedTime);
 
-        return $this->call($module, 'getRecords', $params);
-    }*/
+        return $this->getBeansFromResponse($response);
+    }
 
     /**
      * Implements getRecords API method.
@@ -252,19 +221,7 @@ abstract class AbstractZohoDao
      */
     public function getRelatedRecords($id, $parentModule, $fromIndex = null, $toIndex = null)
     {
-        $params["id"] = $id;
-        $params["parentModule"] = $parentModule;
-        $params['newFormat'] = 1;
-        if($fromIndex) {
-            $params['fromIndex'] = $fromIndex;
-        }
-        if($toIndex) {
-            $params['toIndex'] = $toIndex;
-        }
-
-        $module = $this->getModule();
-
-        $response = $this->zohoClient->call($module, 'getRelatedRecords', $params);
+        $response = $this->zohoClient->getRelatedRecords($this->getModule(), $id, $parentModule, $fromIndex, $toIndex);
 
         return $this->getBeansFromResponse($response);
     }
@@ -282,30 +239,10 @@ abstract class AbstractZohoDao
      */
     public function searchRecords($searchCondition = null, $fromIndex = null, $toIndex = null, \DateTime $lastModifiedTime = null, $selectColumns = null)
     {
-        $module = $this->getModule();
-        $params = [];
-        if ($searchCondition) {
-            $params['criteria'] = $searchCondition;
-        } else {
-            $params['criteria'] = "";
-        }
-        if ($fromIndex) {
-            $params['fromIndex'] = $fromIndex;
-        }
-        if ($toIndex) {
-            $params['toIndex'] = $toIndex;
-        }
-        if ($lastModifiedTime) {
-            $params['lastModifiedTime'] = $lastModifiedTime->format('Y-m-d H:i:s');
-        }
-        if ($selectColumns) {
-            $params['selectColumns'] = $selectColumns;
-        }
-
-        $params['newFormat'] = 1;
-
         try {
-            $response = $this->zohoClient->call($module, 'searchRecords', $params);
+            $response = $this->zohoClient->searchRecords($this->getModule(), $searchCondition, $fromIndex, $toIndex, $lastModifiedTime, $selectColumns);
+
+            return $this->getBeansFromResponse($response);
         } catch (ZohoCRMResponseException $e) {
             // No records found? Let's return an empty array!
             if ($e->getCode() == 4422) {
@@ -314,36 +251,6 @@ abstract class AbstractZohoDao
                 throw $e;
             }
         }
-
-        return $this->getBeansFromResponse($response);
-    }
-
-    /**
-     * Implements getUsers API method.
-     *
-     * @param string $type The type of users you want retrieve (among AllUsers, ActiveUsers, DeactiveUsers, AdminUsers and ActiveConfirmedAdmins)
-     * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
-     * @throws ZohoCRMResponseException
-     */
-    public function getUsers($type = 'AllUsers')
-    {
-        switch($type) {
-            case 'AllUsers':
-            case 'ActiveUsers':
-            case 'DeactiveUsers':
-            case 'AdminUsers':
-            case 'ActiveConfirmedAdmins':
-                $params['type'] = $type;
-                break;
-            default :
-                $params['type'] = 'AllUsers';
-                break;
-        }
-        $params['newFormat'] = 1;
-
-        $response = $this->zohoClient->call('Users', 'getUsers', $params);
-
-        return $this->getBeansFromResponse($response);
     }
 
     /**
@@ -357,24 +264,9 @@ abstract class AbstractZohoDao
      */
     public function insertRecords($beans, $wfTrigger = null, $duplicateCheck = null, $isApproval = null)
     {
-        $module = $this->getModule();
-        $params['newFormat'] = 1;
-        if($wfTrigger) {
-            $params['wfTrigger'] = $wfTrigger;
-        }
-        if($duplicateCheck) {
-            $params['duplicateCheck'] = $duplicateCheck;
-        }
-        if($isApproval) {
-            $params['isApproval'] = $isApproval;
-        }
+        $xmlData = $this->toXml($beans);
 
-        // If there are several beans to insert, we
-        //$params['version'] = is_array($beans) ? 4 : 1;
-        $params['version'] = 4;
-        $xmlData = $this->toXml($beans)->asXML();
-
-        $response = $this->zohoClient->call($module, 'insertRecords', $params, [ 'xmlData' => $xmlData ]);
+        $response = $this->zohoClient->insertRecords($this->getModule(), $xmlData, $wfTrigger, $duplicateCheck, $isApproval);
 
         $records = $response->getRecords();
         if (count($records) != count($beans)) {
@@ -406,19 +298,10 @@ abstract class AbstractZohoDao
      */
     public function updateRecords(array $beans, $wfTrigger = null)
     {
-        $module = $this->getModule();
-        $params['newFormat'] = 1;
 
-        if($wfTrigger) {
-            $params['wfTrigger'] = $wfTrigger;
-        }
+        $xmlData = $this->toXml($beans);
 
-        $params['version'] = 4;
-        $params['newFormat'] = 1;
-
-        $xmlData = $this->toXml($beans)->asXML();
-
-        $response = $this->zohoClient->call($module, 'updateRecords', $params, [ 'xmlData' => $xmlData ]);
+        $response = $this->zohoClient->updateRecords($this->getModule(), $xmlData, null, $wfTrigger);
 
         $records = $response->getRecords();
         if (count($records) != count($beans)) {
@@ -443,11 +326,7 @@ abstract class AbstractZohoDao
      */
     public function uploadFile($id, $content)
     {
-        $module = $this->getModule();
-        $params['id'] = $id;
-        $params['content'] = $content;
-
-        return $this->zohoClient->call($module, 'uploadFile', $params);
+        return $this->zohoClient->uploadFile($this->getModule(), $id, $content);
     }
 
     /**
@@ -458,18 +337,7 @@ abstract class AbstractZohoDao
      */
     public function downloadFile($id)
     {
-        $module = $this->getModule();
-        $params['id'] = $id;
-
-        return $this->zohoClient->call($module, 'downloadFile', $params);
-    }
-
-    /**
-     * Returns a list of modules from Zoho
-     */
-    public function getModules()
-    {
-        return $this->zohoClient->call('Info', 'getModules', []);
+        return $this->zohoClient->downloadFile($this->getModule(), $id);
     }
 
     /**
