@@ -105,6 +105,9 @@ class EntitiesGeneratorService {
 
         }
 
+        self::registerProperty($class, "createdTime", "The time the record was created in Zoho\nType: DateTime\n", "\\DateTime");
+        self::registerProperty($class, "modifiedTime", "The last time the record was modified in Zoho\nType: DateTime\n", "\\DateTime");
+
         $generator = new CodeFileGenerator();
         $code = $generator->generate($class);
 

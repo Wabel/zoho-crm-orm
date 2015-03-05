@@ -67,13 +67,15 @@ abstract class AbstractZohoDao
 
             // First, let's fill the ID.
             // The ID is CONTACTID or ACCOUNTID or Id depending on the Zoho type.
-            $idName = strtoupper(trim($this->getModule(), "s"))."ID";
+            $idName = strtoupper(rtrim($this->getModule(), "s"))."ID";
             if (isset($record[$idName])) {
                 $id = $record[$idName];
             } else {
                 $id = $record['Id'];
             }
             $bean->setZohoId($id);
+            $bean->setCreatedTime(\DateTime::createFromFormat('Y-m-d H:i:s', $record['Created Time']));
+            $bean->setModifiedTime(\DateTime::createFromFormat('Y-m-d H:i:s', $record['Modified Time']));
 
             foreach ($record as $key=>$value) {
                 if (isset($fields[$key])) {
@@ -116,6 +118,9 @@ abstract class AbstractZohoDao
         $module = new \SimpleXMLElement("<$module/>");
 
         foreach ($zohoBeans as $zohoBean) {
+            if (!$zohoBean instanceof ZohoBeanInterface) {
+                throw new ZohoCRMException("Zoho beans sent to save must implement the ZohoBeanInterface.");
+            }
 
             $properties = $this->getFlatFields();
             $row = $module->addChild("row");
@@ -152,6 +157,7 @@ abstract class AbstractZohoDao
                     $fl->addAttribute("val", $name);
                 }
             }
+            $no++;
         }
 
         return $module;
@@ -281,6 +287,10 @@ abstract class AbstractZohoDao
             }
 
             $bean->setZohoId($record['Id']);
+            $bean->setCreatedTime(\DateTime::createFromFormat('Y-m-d H:i:s', $record['Created Time']));
+            if ($record['Modified Time']) {
+                $bean->setModifiedTime(\DateTime::createFromFormat('Y-m-d H:i:s', $record['Modified Time']));
+            }
 
             $i++;
         }
