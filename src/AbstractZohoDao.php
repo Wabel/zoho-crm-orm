@@ -1,4 +1,5 @@
-<?php namespace Wabel\Zoho\CRM;
+<?php
+namespace Wabel\Zoho\CRM;
 
 use GuzzleHttp\Client;
 use Wabel\Zoho\CRM\Exception\ZohoCRMException;
@@ -254,7 +255,6 @@ abstract class AbstractZohoDao
      * @param bool $wfTrigger Whether or not the call should trigger the workflows related to a "created" event
      * @param int $duplicateCheck 1 : Throwing error when a duplicate is found; 2 : Merging with existing duplicate
      * @param bool $isApproval Whether or not to push the record into an approval sandbox first
-     * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
      * @throws ZohoCRMResponseException
      */
     public function insertRecords($beans, $wfTrigger = null, $duplicateCheck = null, $isApproval = null)
