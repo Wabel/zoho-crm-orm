@@ -183,17 +183,11 @@ abstract class AbstractZohoDao
      *
      * @param string $id Zoho Id of the record to delete
      *
-     * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
      * @throws ZohoCRMResponseException
      */
     public function delete($id)
     {
-        $module = $this->getModule();
-        $params['id'] = $id;
-        $params['newFormat'] = 1;
-
-        $response =  $this->zohoClient->call($module, 'deleteRecords', $params);
-        $this->getBeansFromResponse($response);
+        $this->zohoClient->deleteRecords($this->getModule(), $id);
     }
 
     /**
@@ -206,12 +200,8 @@ abstract class AbstractZohoDao
     public function getById($id)
     {
         $module = $this->getModule();
-        $params = array(
-            'id' => $id,
-            'newFormat' => 2
-        );
 
-        $response = $this->zohoClient->call($module, 'getRecordById', $params);
+        $response = $this->zohoClient->getRecordById($module, $id);
 
         return $this->getBeansFromResponse($response);
 

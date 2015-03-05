@@ -11,4 +11,10 @@ interface ZohoBeanInterface {
      * @return string
      */
     public function getZohoId();
+
+    /**
+     * Sets the ZohoId of the bean.
+     * @param string $id
+     */
+    public function setZohoId($id);
 }

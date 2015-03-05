@@ -122,14 +122,17 @@ class ZohoClient
     /**
      * Implements deleteRecords API method.
      *
+     * @param string $module
      * @param string $id Id of the record
-     *
      * @return Response The Response object
+     * @throws ZohoCRMResponseException
      */
     public function deleteRecords($module, $id)
     {
-        $params['id'] = $id;
-        $params['newFormat'] = 1;
+        $params = array(
+            'id' => $id,
+            'newFormat' => 1
+        );
 
         return $this->call($module, 'deleteRecords', $params);
     }
@@ -137,13 +140,15 @@ class ZohoClient
     /**
      * Implements getRecordById API method.
      *
-     * @param  string   $id      Id of the record
-     * @param  array    $params  request parameters
+     * @param  string $module The module to use
+     * @param  string $id Id of the record
+     * @param  array $params request parameters
      *                           newFormat 1 (default) - exclude fields with null values in the response
      *                           2 - include fields with null values in the response
      *                           version   1 (default) - use earlier API implementation
      *                           2 - use latest API implementation
      * @return Response The Response object
+     * @throws ZohoCRMResponseException
      */
     public function getRecordById($module, $id, $params = array())
     {
