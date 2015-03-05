@@ -65,6 +65,7 @@ class EntitiesGeneratorService {
 
         $class->setName($className)
             ->setNamespace($namespace)
+            ->addInterface("\\Wabel\\Zoho\\CRM\\ZohoBeanInterface")
             ->setMethod(PhpMethod::create('__construct'));
 
         // Let's add the ZohoID property

@@ -4,8 +4,6 @@ use GuzzleHttp\Client;
 use Wabel\Zoho\CRM\Exception\ZohoCRMException;
 use Wabel\Zoho\CRM\Exception\ZohoCRMResponseException;
 use Wabel\Zoho\CRM\Request\Response;
-use Wabel\Zoho\CRM\Wrapper\AbstractZohoBean;
-use Wabel\Zoho\CRM\Wrapper\Element;
 
 /**
  * Base class that provides access to Zoho through Zoho beans.
@@ -52,7 +50,7 @@ abstract class AbstractZohoDao
      * Parse a Zoho Response in order to retrieve one or several ZohoBeans from it
      *
      * @param Response $zohoResponse The response returned by the ZohoClient->call() method
-     * @return AbstractZohoBean[] The array of Zoho Beans parsed from the response
+     * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
      */
     protected function getBeansFromResponse(Response $zohoResponse) {
 
@@ -63,7 +61,7 @@ abstract class AbstractZohoDao
 
         foreach ($zohoResponse->getRecords() as $record) {
 
-            /** @var AbstractZohoBean $bean */
+            /** @var ZohoBeanInterface $bean */
             $bean = new $beanClass();
 
             // First, let's fill the ID.
@@ -106,7 +104,7 @@ abstract class AbstractZohoDao
     /**
      * Convert an array of ZohoBeans into a SimpleXMLElement
      *
-     * @param $zohoBeans AbstractZohoBean[]
+     * @param $zohoBeans ZohoBeanInterface[]
      * @return \SimpleXMLElement The SimpleXMLElement containing the XML for a request
      */
     protected function toXml($zohoBeans)
@@ -185,7 +183,7 @@ abstract class AbstractZohoDao
      *
      * @param string $id Zoho Id of the record to delete
      *
-     * @return AbstractZohoBean[] The array of Zoho Beans parsed from the response
+     * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
      * @throws ZohoCRMResponseException
      */
     public function delete($id)
@@ -202,7 +200,7 @@ abstract class AbstractZohoDao
      * Implements getRecordById API method.
      *
      * @param  string $id Zoho Id of the record to retrieve
-     * @return AbstractZohoBean[] The array of Zoho Beans parsed from the response
+     * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
      * @throws ZohoCRMResponseException
      */
     public function getById($id)
@@ -253,7 +251,7 @@ abstract class AbstractZohoDao
      * @param string $parentModule The parent module of the records
      * @param int $fromIndex The offset from which you want parse Zoho
      * @param int $toIndex The offset to which you want to parse Zoho
-     * @return AbstractZohoBean[] The array of Zoho Beans parsed from the response
+     * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
      * @throws ZohoCRMResponseException
      */
     public function getRelatedRecords($id, $parentModule, $fromIndex = null, $toIndex = null)
@@ -283,7 +281,7 @@ abstract class AbstractZohoDao
      * @param int $toIndex The offset to which you want to parse Zoho
      * @param \DateTime $lastModifiedTime
      * @param string $selectColumns The list
-     * @return AbstractZohoBean[] The array of Zoho Beans parsed from the response
+     * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
      * @throws ZohoCRMResponseException
      */
     public function searchRecords($searchCondition = null, $fromIndex = null, $toIndex = null, \DateTime $lastModifiedTime = null, $selectColumns = null)
@@ -328,7 +326,7 @@ abstract class AbstractZohoDao
      * Implements getUsers API method.
      *
      * @param string $type The type of users you want retrieve (among AllUsers, ActiveUsers, DeactiveUsers, AdminUsers and ActiveConfirmedAdmins)
-     * @return AbstractZohoBean[] The array of Zoho Beans parsed from the response
+     * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
      * @throws ZohoCRMResponseException
      */
     public function getUsers($type = 'AllUsers')
@@ -355,11 +353,11 @@ abstract class AbstractZohoDao
     /**
      * Implements insertRecords API method.
      *
-     * @param AbstractZohoBean[] $beans The Zoho Beans to insert in the CRM
+     * @param ZohoBeanInterface[] $beans The Zoho Beans to insert in the CRM
      * @param bool $wfTrigger Whether or not the call should trigger the workflows related to a "created" event
      * @param int $duplicateCheck 1 : Throwing error when a duplicate is found; 2 : Merging with existing duplicate
      * @param bool $isApproval Whether or not to push the record into an approval sandbox first
-     * @return AbstractZohoBean[] The array of Zoho Beans parsed from the response
+     * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
      * @throws ZohoCRMResponseException
      */
     public function insertRecords($beans, $wfTrigger = null, $duplicateCheck = null, $isApproval = null)
