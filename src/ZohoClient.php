@@ -139,7 +139,7 @@ class ZohoClient
      * @return Response The Response object
      * @throws ZohoCRMResponseException
      */
-    public function getRecords($module, $selectColumns = null, $fromIndex = null, $toIndex = null, $sortColumnString = null, $sortOrderString = null, $lastModifiedTime = null)
+    public function getRecords($module, $selectColumns = null, $fromIndex = null, $toIndex = 200, $sortColumnString = null, $sortOrderString = null, $lastModifiedTime = null)
     {
         $params['newFormat'] = 1;
         $params['version'] = 1;

@@ -197,11 +197,14 @@ abstract class AbstractZohoDao
      * @return Response The Response object
      * @throws ZohoCRMResponseException
      */
-    public function getRecords($selectColumns = null, $fromIndex = null, $toIndex = null, $sortColumnString = null, $sortOrderString = null, \DateTime $lastModifiedTime = null)
+    public function getRecords($selectColumns = null, $fromIndex = null, $toIndex = 200, $sortColumnString = null, $sortOrderString = null, \DateTime $lastModifiedTime = null)
     {
         $response = $this->zohoClient->getRecords($this->getModule(), $selectColumns, $fromIndex, $toIndex, $sortColumnString, $sortOrderString, $lastModifiedTime);
 
-        return $this->getBeansFromResponse($response);
+        if(count($response->getRecords()) == count($toIndex))
+            return array_merge(
+                $this->getBeansFromResponse($response),
+                $this->getRecords($selectColumns, $fromIndex));
     }
 
     /**
@@ -232,7 +235,7 @@ abstract class AbstractZohoDao
      * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
      * @throws ZohoCRMResponseException
      */
-    public function searchRecords($searchCondition = null, $fromIndex = null, $toIndex = null, \DateTime $lastModifiedTime = null, $selectColumns = null)
+    public function searchRecords($searchCondition = null, $fromIndex = 1, $toIndex = null, \DateTime $lastModifiedTime = null, $selectColumns = null)
     {
         try {
             $response = $this->zohoClient->searchRecords($this->getModule(), $searchCondition, $fromIndex, $toIndex, $lastModifiedTime, $selectColumns);
