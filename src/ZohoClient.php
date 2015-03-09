@@ -130,16 +130,16 @@ class ZohoClient
      * Implements getRecords API method.
      *
      * @param $module
-     * @param $selectColumns
-     * @param $fromIndex
-     * @param $toIndex
      * @param $sortColumnString
      * @param $sortOrderString
      * @param \DateTime $lastModifiedTime
+     * @param $selectColumns
+     * @param $fromIndex
+     * @param $toIndex
      * @return Response The Response object
      * @throws ZohoCRMResponseException
      */
-    public function getRecords($module, $selectColumns = null, $fromIndex = null, $toIndex = 200, $sortColumnString = null, $sortOrderString = null, $lastModifiedTime = null)
+    public function getRecords($module, $sortColumnString = null, $sortOrderString = null, $lastModifiedTime = null, $selectColumns = null, $fromIndex = null, $toIndex = 200)
     {
         $params['newFormat'] = 1;
         $params['version'] = 1;

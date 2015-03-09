@@ -34,6 +34,10 @@ class ZohoClientTest extends PHPUnit_Framework_TestCase
         $this->assertArrayHasKey('Lead Owner', $fields->getRecords()['Lead Information']);
     }
 
+    /**
+     * @throws Exception
+     * @throws \Wabel\Zoho\CRM\Exception\ZohoCRMResponseException
+     */
     public function testDao() {
         require __DIR__.'/generated/Contact.php';
         require __DIR__.'/generated/ContactZohoDao.php';
@@ -57,29 +61,47 @@ class ZohoClientTest extends PHPUnit_Framework_TestCase
         $contactBean->setEmail($email);
         $contactZohoDao->save($contactBean);
 
-        // Now, let's test multiple saves at once.
-        $contactBean2 = new \TestNamespace\Contact();
-        $contactBean3 = new \TestNamespace\Contact();
-        $lastName2 = uniqid("Test");
-        $lastName3 = uniqid("Test");
-        $contactBean2->setLastName($lastName2);
-        $contactBean3->setLastName($lastName3);
-        $contactBean2->setFirstName("TestMultipleUser");
-        $contactBean3->setFirstName("TestMultipleUser");
-        $contactZohoDao->save([$contactBean2, $contactBean3]);
+        $multipleContact = [];
+        // Now, let's test multiple saves under 100.
+        for($i = 0; $i < 98; $i++) {
+            $multipleContact["contact"][$i] = new \TestNamespace\Contact();
+            $multipleContact["lastName"][$i] = uniqid("Test");
+            $multipleContact["email"][$i] = $multipleContact["lastName"][$i]."@test.com";
+            $multipleContact["contact"][$i]->setLastName($multipleContact["lastName"][$i]);
+            $multipleContact["contact"][$i]->setFirstName("TestMultipleUser");
+        }
+        $contactZohoDao->save($multipleContact["contact"]);
 
-        // And multiple updates at once:
-        $email2 = $lastName2."@test.com";
-        $email3 = $lastName3."@test.com";
-        $contactBean2->setEmail($email2);
-        $contactBean3->setEmail($email3);
-        $contactZohoDao->save([$contactBean2, $contactBean3]);
+
+        for($i = 0; $i < 98; $i++) {
+            $multipleContact["contact"][$i]->setEmail($multipleContact["email"][$i]);
+        }
+        $contactZohoDao->save($multipleContact["contact"]);
+
+        // Now, let's test multiple saves over 100.
+        $multiplePoolContact = [];
+        for($i = 0; $i < 302; $i++) {
+            $multiplePoolContact["contact"][$i] = new \TestNamespace\Contact();
+            $multiplePoolContact["lastName"][$i] = uniqid("Test");
+            $multiplePoolContact["email"][$i] = $multiplePoolContact["lastName"][$i]."@test.com";
+            $multiplePoolContact["contact"][$i]->setLastName($multiplePoolContact["lastName"][$i]);
+            $multiplePoolContact["contact"][$i]->setFirstName("TestMultiplePoolUser");
+        }
+        $contactZohoDao->save($multiplePoolContact["contact"]);
+
+
+        for($i = 0; $i < 302; $i++) {
+            $multiplePoolContact["contact"][$i]->setEmail($multiplePoolContact["email"][$i]);
+        }
+        $beforePoolMultiple = new DateTime();
+        $contactZohoDao->save($multiplePoolContact["contact"]);
 
 
 
         // We need to wait for Zoho to index the record.
         sleep(120);
 
+        // Test if the unique Contact has been well saved and is deleted
         $records = $contactZohoDao->searchRecords("(Last Name:$lastName)");
 
         $this->assertCount(1, $records);
@@ -93,9 +115,35 @@ class ZohoClientTest extends PHPUnit_Framework_TestCase
 
         $contactZohoDao->delete($contactBean->getZohoId());
 
+        $records = $contactZohoDao->searchRecords("(Last Name:$lastName)");
+        $this->assertCount(0, $records);
+
+        // Test if the 98 Contacts has been well saved and are deleted
         $records = $contactZohoDao->searchRecords("(First Name:TestMultipleUser)");
-        foreach ($records as $record) {
+
+        $this->assertCount(98, $records);
+        foreach ($records as $key=>$record) {
+            $this->assertInstanceOf("\\TestNamespace\\Contact", $record);
+            $this->assertEquals("TestMultipleUser", $record->getFirstName());
             $contactZohoDao->delete($record->getZohoId());
         }
+
+        $records = $contactZohoDao->searchRecords("(First Name:TestMultipleUser)");
+        $this->assertCount(0, $records);
+
+        // Test if the 302 Contacts has been well saved and are deleted
+        $records = $contactZohoDao->getRecords("Modified Time", "asc", $beforePoolMultiple);
+
+        $this->assertCount(302, $records);
+        foreach ($records as $key=>$record) {
+            $this->assertInstanceOf("\\TestNamespace\\Contact", $record);
+            $this->assertEquals("TestMultiplePoolUser", $record->getFirstName());
+            $this->assertEquals($multiplePoolContact["lastName"][$key], $record->getLastName());
+            $this->assertEquals($multiplePoolContact["email"][$key], $record->getEmail());
+            $contactZohoDao->delete($record->getZohoId());
+        }
+
+        $records = $contactZohoDao->searchRecords("(First Name:TestMultiplePoolUser)");
+        $this->assertCount(0, $records);
     }
 }

@@ -14,6 +14,8 @@ abstract class AbstractZohoDao
 {
     const ON_DUPLICATE_THROW = 1;
     const ON_DUPLICATE_MERGE = 2;
+    const MAX_RECORD_RETRIEVE = 200;
+    const MAX_SIMULTANEOUS_SAVE = 100;
 
     /**
      * The class implementing API methods not directly related to a specific module
@@ -203,24 +205,25 @@ abstract class AbstractZohoDao
     /**
      * Implements getRecords API method.
      *
-     * @param $selectColumns
-     * @param $fromIndex
-     * @param $toIndex
      * @param $sortColumnString
      * @param $sortOrderString
      * @param \DateTime $lastModifiedTime
+     * @param $selectColumns
+     * @param $fromIndex
+     * @param $toIndex
      * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
      * @throws ZohoCRMResponseException
      */
-    public function getRecords($selectColumns = null, $fromIndex = null, $toIndex = 200, $sortColumnString = null, $sortOrderString = null, \DateTime $lastModifiedTime = null)
+    public function getRecords($sortColumnString = null, $sortOrderString = null, \DateTime $lastModifiedTime = null, $selectColumns = null, $fromIndex = 1, $toIndex = 200)
     {
         try {
-            $response = $this->zohoClient->getRecords($this->getModule(), $selectColumns, $fromIndex, $toIndex, $sortColumnString, $sortOrderString, $lastModifiedTime);
+            $toindex = $toIndex > 200 ? 200 : $toIndex;
+            $response = $this->zohoClient->getRecords($this->getModule(), $sortColumnString, $sortOrderString, $lastModifiedTime, $selectColumns, $fromIndex, $toIndex);
 
             if(count($response->getRecords()) == count($toIndex)) {
                 return array_merge(
                     $this->getBeansFromResponse($response),
-                    $this->getRecords($selectColumns, $toIndex + 1, $toIndex + 200, $sortColumnString, $sortOrderString, $lastModifiedTime)
+                    $this->getRecords($sortColumnString, $sortOrderString, $lastModifiedTime, $selectColumns, $toindex + 1)
                 );
             }
             else {
@@ -321,18 +324,15 @@ abstract class AbstractZohoDao
         // We can't pass more than 100 records to Zoho, so we split the request into pieces of 100
         foreach(array_chunk($beans, 100) AS $beanPool) {
             $xmlData = $this->toXml($beanPool);
-
             $response = $this->zohoClient->insertRecords($this->getModule(), $xmlData, $wfTrigger, $duplicateCheck, $isApproval);
-
             $records = array_merge($records, $response->getRecords());
         }
         if (count($records) != count($beans)) {
             throw new ZohoCRMException("Error while inserting beans in Zoho. ".count($beans)." passed in parameter, but ".count($records)." returned.");
         }
 
-        $i = 1;
-        foreach ($beans as $bean) {
-            $record = $records[$i-1];
+        foreach ($beans as $key=>$bean) {
+            $record = $records[$key];
 
             if (substr($record['code'], 0, 1) != "2") {
                 // This field is probably in error!
@@ -344,8 +344,6 @@ abstract class AbstractZohoDao
             if ($record['Modified Time']) {
                 $bean->setModifiedTime(\DateTime::createFromFormat('Y-m-d H:i:s', $record['Modified Time']));
             }
-
-            $i++;
         }
     }
 
@@ -374,10 +372,21 @@ abstract class AbstractZohoDao
             throw new ZohoCRMException("Error while inserting beans in Zoho. ".count($beans)." passed in parameter, but ".count($records)." returned.");
         }
 
-        foreach ($records as $record) {
+        foreach ($beans as $key=>$bean) {
+            $record = $records[$key];
+
             if (substr($record['code'], 0, 1) != "2") {
                 // This field is probably in error!
-                throw new ZohoCRMException('An error occurred while inserting records. '.(isset($record['message'])?$record['message']:""), $record['code']);
+                throw new ZohoCRMException('An error occurred while updating records. '.(isset($record['message'])?$record['message']:""), $record['code']);
+            }
+
+            if ($record['Id'] != $bean->getZohoId()) {
+                // This field is probably in error!
+                throw new ZohoCRMException('An error occurred while updating records. The Zoho ID to update was '.$bean->getZohoId().', returned '.$record['Id']);
+            }
+
+            if ($record['Modified Time']) {
+                $bean->setModifiedTime(\DateTime::createFromFormat('Y-m-d H:i:s', $record['Modified Time']));
             }
         }
     }
@@ -420,22 +429,22 @@ abstract class AbstractZohoDao
             $beans = [ $beans ];
         }
 
-        $insertRecords = [];
-        $updateRecords = [];
+        $toInsert = [];
+        $toUpdate = [];
 
         foreach ($beans as $bean) {
             if ($bean->getZohoId()) {
-                $updateRecords[] = $bean;
+                $toUpdate[] = $bean;
             } else {
-                $insertRecords[] = $bean;
+                $toInsert[] = $bean;
             }
         }
 
-        if ($updateRecords) {
-            $this->updateRecords($updateRecords, $wfTrigger);
+        if ($toUpdate) {
+            $this->updateRecords($toUpdate, $wfTrigger);
         }
-        if ($insertRecords) {
-            $this->insertRecords($insertRecords, $wfTrigger, $duplicateCheck, $isApproval);
+        if ($toInsert) {
+            $this->insertRecords($toInsert, $wfTrigger, $duplicateCheck, $isApproval);
         }
     }
 }
