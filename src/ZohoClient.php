@@ -112,16 +112,19 @@ class ZohoClient
      * Implements getRecordById API method.
      *
      * @param  string $module The module to use
-     * @param  string $id Id of the record
+     * @param  string $id Id of the record or a list of IDs separated by a semicolon
      * @return Response The Response object
      * @throws ZohoCRMResponseException
      */
     public function getRecordById($module, $id)
     {
-        $params['id'] = $id;
-        if (empty($params['newFormat'])) {
-            $params['newFormat'] = 2;
+        if(strpos($id, ";") === false) {
+            $params['id'] = $id;
         }
+        else {
+            $params['idlist'] = $id;
+        }
+        $params['newFormat'] = 1;
 
         return $this->call($module, 'getRecordById', $params);
     }
@@ -139,7 +142,7 @@ class ZohoClient
      * @return Response The Response object
      * @throws ZohoCRMResponseException
      */
-    public function getRecords($module, $sortColumnString = null, $sortOrderString = null, $lastModifiedTime = null, $selectColumns = null, $fromIndex = null, $toIndex = 200)
+    public function getRecords($module, $sortColumnString = null, $sortOrderString = null, $lastModifiedTime = null, $selectColumns = null, $fromIndex = null, $toIndex = null)
     {
         $params['newFormat'] = 1;
         $params['version'] = 1;

@@ -14,7 +14,8 @@ abstract class AbstractZohoDao
 {
     const ON_DUPLICATE_THROW = 1;
     const ON_DUPLICATE_MERGE = 2;
-    const MAX_RECORD_RETRIEVE = 200;
+    const MAX_GET_RECORDS = 200;
+    const MAX_GET_RECORDS_BY_ID = 100;
     const MAX_SIMULTANEOUS_SAVE = 100;
 
     /**
@@ -180,7 +181,7 @@ abstract class AbstractZohoDao
     /**
      * Implements getRecordById API method.
      *
-     * @param  string $id Zoho Id of the record to retrieve
+     * @param  string|array $id Zoho Id of the record to retrieve OR an array of IDs
      * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
      * @throws ZohoCRMResponseException
      */
@@ -188,10 +189,23 @@ abstract class AbstractZohoDao
     {
         try {
             $module = $this->getModule();
+            $beans = [];
 
-            $response = $this->zohoClient->getRecordById($module, $id);
+            // If there's several IDs to process, we divide them by pools of 100 and implode them before requesting
+            if(is_array($id)) {
+                foreach(array_chunk($id, self::MAX_GET_RECORDS_BY_ID) AS $pool) {
+                    $idlist = implode(";", $pool);
+                    $response = $this->zohoClient->getRecordById($module, $idlist);
+                    $beans = array_merge($beans, $this->getBeansFromResponse($response));
+                }
+            }
+            // if not, we simply request our record
+            else {
+                $response = $this->zohoClient->getRecordById($module, $id);
+                $beans = $this->getBeansFromResponse($response);
+            }
 
-            return $this->getBeansFromResponse($response);
+            return $beans;
         } catch (ZohoCRMResponseException $e) {
             // No records found? Let's return an empty array!
             if ($e->getCode() == 4422) {
@@ -214,16 +228,15 @@ abstract class AbstractZohoDao
      * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
      * @throws ZohoCRMResponseException
      */
-    public function getRecords($sortColumnString = null, $sortOrderString = null, \DateTime $lastModifiedTime = null, $selectColumns = null, $fromIndex = 1, $toIndex = 200)
+    public function getRecords($sortColumnString = null, $sortOrderString = null, \DateTime $lastModifiedTime = null, $selectColumns = null, $fromIndex = null, $toIndex = null)
     {
         try {
-            $toindex = $toIndex > 200 ? 200 : $toIndex;
             $response = $this->zohoClient->getRecords($this->getModule(), $sortColumnString, $sortOrderString, $lastModifiedTime, $selectColumns, $fromIndex, $toIndex);
 
-            if(count($response->getRecords()) == count($toIndex)) {
+            if(count($response->getRecords()) == self::MAX_GET_RECORDS) {
                 return array_merge(
                     $this->getBeansFromResponse($response),
-                    $this->getRecords($sortColumnString, $sortOrderString, $lastModifiedTime, $selectColumns, $toindex + 1)
+                    $this->getRecords($sortColumnString, $sortOrderString, $lastModifiedTime, $selectColumns, count($response->getRecords())+1,  self::MAX_GET_RECORDS)
                 );
             }
             else {
@@ -287,12 +300,20 @@ abstract class AbstractZohoDao
     public function searchRecords($searchCondition = null, $fromIndex = 1, $toIndex = 200, \DateTime $lastModifiedTime = null, $selectColumns = null)
     {
         try {
+            $nextToIndex = 0;
+            // Dealing with limits bigger than the max authorized limit
+            if(!$toIndex || $toIndex > self::MAX_GET_RECORDS) {
+                $nextToIndex = $toIndex ? $toIndex - self::MAX_GET_RECORDS : null;
+                $toIndex = $toIndex ? self::MAX_GET_RECORDS : 200;
+            }
+
             $response = $this->zohoClient->searchRecords($this->getModule(), $searchCondition, $fromIndex, $toIndex, $lastModifiedTime, $selectColumns);
 
-            if(count($response->getRecords()) == count($toIndex)) {
+
+            if(count($response->getRecords()) == $toIndex) {
                 return array_merge(
                     $this->getBeansFromResponse($response),
-                    $this->searchRecords($searchCondition, $toIndex + 1, $toIndex + 200, $lastModifiedTime, $selectColumns)
+                    $this->searchRecords($searchCondition, $fromIndex + self::MAX_GET_RECORDS, $nextToIndex, $lastModifiedTime, $selectColumns)
                 );
             }
             else {
