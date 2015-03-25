@@ -133,7 +133,7 @@ class ZohoClientTest extends PHPUnit_Framework_TestCase
 //        $records = $contactZohoDao->searchRecords("(First Name:TestMultipleUser)");
 //        $this->assertCount(0, $records);
 
-        $records = $contactZohoDao->searchRecords("(First Name:TestMultiplePoolUser)");
+        $records = $contactZohoDao->searchRecords("(First Name:TestMultiplePoolUser)", 1, 302);
         $this->assertCount(302, $records);
 
         // Test if the 302 Contacts has been well saved and are deleted

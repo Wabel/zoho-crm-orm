@@ -297,20 +297,26 @@ abstract class AbstractZohoDao
      * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
      * @throws ZohoCRMResponseException
      */
-    public function searchRecords($searchCondition = null, $fromIndex = 1, $toIndex = 200, \DateTime $lastModifiedTime = null, $selectColumns = null)
+    public function searchRecords($searchCondition = null, $fromIndex = 1, $toIndex = null, \DateTime $lastModifiedTime = null, $selectColumns = null)
     {
         try {
-            $nextToIndex = 0;
             // Dealing with limits bigger than the max authorized limit
-            if(!$toIndex || $toIndex > self::MAX_GET_RECORDS) {
-                $nextToIndex = $toIndex ? $toIndex - self::MAX_GET_RECORDS : null;
-                $toIndex = $toIndex ? self::MAX_GET_RECORDS : 200;
+            if(!$toIndex) {
+                $nextToIndex = null;
+                $limit = self::MAX_GET_RECORDS;
+            }
+            elseif($toIndex > self::MAX_GET_RECORDS) {
+                $nextToIndex = $toIndex - self::MAX_GET_RECORDS;
+                $limit = self::MAX_GET_RECORDS;
+            }
+            else {
+                $nextToIndex = 0;
+                $limit = $toIndex;
             }
 
-            $response = $this->zohoClient->searchRecords($this->getModule(), $searchCondition, $fromIndex, $toIndex, $lastModifiedTime, $selectColumns);
+            $response = $this->zohoClient->searchRecords($this->getModule(), $searchCondition, $fromIndex, $limit, $lastModifiedTime, $selectColumns);
 
-
-            if(count($response->getRecords()) == $toIndex) {
+            if((!$nextToIndex && count($response->getRecords()) == self::MAX_GET_RECORDS) || $toIndex > self::MAX_GET_RECORDS) {
                 return array_merge(
                     $this->getBeansFromResponse($response),
                     $this->searchRecords($searchCondition, $fromIndex + self::MAX_GET_RECORDS, $nextToIndex, $lastModifiedTime, $selectColumns)

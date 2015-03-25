@@ -9,7 +9,7 @@ use Wabel\Zoho\CRM\Request\Response;
  * @package Wabel\Zoho\CRM\Exception
  * @version 1.0.0
  */
-class ZohoCRMResponseException extends \Exception
+class ZohoCRMResponseException extends ZohoCRMException
 {
   public static $errorMessages = array(
    '0000'  => 'Unknown error',

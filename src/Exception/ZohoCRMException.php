@@ -1,5 +1,4 @@
 <?php namespace Wabel\Zoho\CRM\Exception;
-use Wabel\Zoho\CRM\Request\Response;
 
 /**
  * Zoho CRM Exception.
