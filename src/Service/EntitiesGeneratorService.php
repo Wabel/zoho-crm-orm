@@ -57,11 +57,8 @@ class EntitiesGeneratorService {
     }
 
     public function generateBean($fields, $namespace, $className, $moduleName, $targetDirectory) {
-        if (class_exists($namespace."\\".$className)) {
-            $class = PhpClass::fromReflection(new \ReflectionClass($namespace."\\".$className));
-        } else {
-            $class = PhpClass::create();
-        }
+
+        $class = PhpClass::create();
 
         $class->setName($className)
             ->setNamespace($namespace)
@@ -101,6 +98,52 @@ class EntitiesGeneratorService {
                     "Read only: ".($isreadonly?"true":"false")."\n".
                     "Max length: ".$maxlength."\n".
                     "Custom field: ".($customfield?"true":"false")."\n", $phpType);
+
+                // Adds a ID field for lookups
+                if($type === "Lookup") {
+                    $generateId = false;
+
+                    if($customfield) {
+                        $modules = $this->zohoClient->getModules();
+                        foreach ($modules->getRecords() as $module) {
+                            if($module["sl"] == $name) {
+                                $name = $module["sl"]."_ID";
+                                $generateId = true;
+                            }
+                        }
+                    }
+                    else {
+                        switch($name) {
+                            //TODO : To be completed with known lookup fields that are not custom fields but default in Zoho
+                            case "Account Name" :
+                                $name = "ACCOUNTID";
+                                $generateId = true;
+                                break;
+                            case "Contact Name" :
+                                $name = "CONTACTID";
+                                $generateId = true;
+                                break;
+                        }
+                    }
+
+                    if($generateId) {
+                        $req = false;
+                        $type = "Lookup ID";
+                        $isreadonly = true;
+                        $maxlength = $field['maxlength'];
+                        $label = $field['label'];
+                        $dv = $field['dv'];
+
+
+                        $field['phpType'] = $phpType;
+
+                        self::registerProperty($class, ($customfield ? self::camelCase($name) : $name), "Zoho field " . $name . "\n" .
+                            "Type: " . $type . "\n" .
+                            "Read only: " . ($isreadonly ? "true" : "false") . "\n" .
+                            "Max length: " . $maxlength . "\n" .
+                            "Custom field: " . ($customfield ? "true" : "false") . "\n", "string");
+                    }
+                }
             }
 
         }
@@ -115,11 +158,8 @@ class EntitiesGeneratorService {
     }
 
     public function generateDao($fields, $namespace, $className, $daoClassName, $moduleName, $targetDirectory) {
-        if (class_exists($namespace."\\".$daoClassName)) {
-            $class = PhpClass::fromReflection(new \ReflectionClass($namespace."\\".$daoClassName));
-        } else {
-            $class = PhpClass::create();
-        }
+
+        $class = PhpClass::create();
 
         $class->setName($daoClassName)
             ->setNamespace($namespace)
@@ -132,6 +172,46 @@ class EntitiesGeneratorService {
                 $fields[$key][$name]['phpType'] = $phpType;
                 $fields[$key][$name]['getter'] = "get".ucfirst(self::camelCase($name));
                 $fields[$key][$name]['setter'] = "set".ucfirst(self::camelCase($name));
+
+                if($type === "Lookup") {
+                    $fieldName = null;
+                    $fieldModule = null;
+
+                    if ($field["customfield"]) {
+                        $modules = $this->zohoClient->getModules();
+                        foreach ($modules->getRecords() as $module) {
+                            if ($module["sl"] == $field["label"]) {
+                                $fieldName = $module["sl"] . "_ID";
+                                $fieldModule = str_replace(" ", "", $module["sl"]);
+                                break;
+                            }
+                        }
+                    } else {
+                        switch ($field["label"]) {
+                            //TODO : To be completed with known lookup fields that are not custom fields but default in Zoho
+                            case "Account Name" :
+                                $fieldName = "ACCOUNTID";
+                                $fieldModule = "Account";
+                                break;
+                            case "Contact Name" :
+                                $fieldName = "CONTACTID";
+                                $fieldModule = "Contact";
+                                break;
+                        }
+                    }
+                    if($fieldName) {
+                        $fields[$key][$fieldName]["req"] = false;
+                        $fields[$key][$fieldName]["type"] = "Lookup ID";
+                        $fields[$key][$fieldName]["isreadonly"] = true;
+                        $fields[$key][$fieldName]["maxlength"] = 100;
+                        $fields[$key][$fieldName]["label"] = $fieldName;
+                        $fields[$key][$fieldName]["dv"] = $fieldName;
+                        $fields[$key][$fieldName]["customfield"] = true;
+                        $fields[$key][$fieldName]['phpType'] = $phpType;
+                        $fields[$key][$fieldName]['getter'] = "get".$fieldModule."Id";
+                        $fields[$key][$fieldName]['setter'] = "set".$fieldModule."Id";
+                    }
+                }
             }
         }
 

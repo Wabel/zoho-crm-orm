@@ -70,9 +70,11 @@ abstract class AbstractZohoDao
 
             // First, let's fill the ID.
             // The ID is CONTACTID or ACCOUNTID or Id depending on the Zoho type.
-            $idName = strtoupper(rtrim($this->getModule(), "s"))."ID";
-            if (isset($record[$idName])) {
-                $id = $record[$idName];
+            $idName = strtoupper(rtrim($this->getModule(), "s"));
+            if (isset($record[$idName."ID"])) {
+                $id = $record[$idName."ID"];
+            }elseif (isset($record[$idName."_ID"])) {
+                $id = $record[$idName."_ID"];
             } else {
                 $id = $record['Id'];
             }
@@ -202,7 +204,7 @@ abstract class AbstractZohoDao
             // if not, we simply request our record
             else {
                 $response = $this->zohoClient->getRecordById($module, $id);
-                $beans = $this->getBeansFromResponse($response);
+                $beans = $this->getBeansFromResponse($response)[0];
             }
 
             return $beans;
@@ -450,7 +452,7 @@ abstract class AbstractZohoDao
      *
      * TODO: isApproval is not used by each module.
      */
-    public function save($beans, $wfTrigger = false, $duplicateCheck = self::ON_DUPLICATE_THROW, $isApproval = false)
+    public function save($beans, $wfTrigger = false, $duplicateCheck = self::ON_DUPLICATE_MERGE, $isApproval = false)
     {
         if (!is_array($beans)) {
             $beans = [ $beans ];
