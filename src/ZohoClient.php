@@ -211,7 +211,7 @@ class ZohoClient
         if ($searchCondition) {
             $params['criteria'] = $searchCondition;
         } else {
-            $params['criteria'] = "";
+            $params['criteria'] = "()";
         }
         if ($fromIndex) {
             $params['fromIndex'] = $fromIndex;
