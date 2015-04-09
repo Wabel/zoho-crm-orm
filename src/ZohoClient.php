@@ -147,22 +147,22 @@ class ZohoClient
         $params['newFormat'] = 1;
         $params['version'] = 1;
         if($selectColumns) {
-            $params['selectColumns'] = $fromIndex;
+            $params['selectColumns'] = $selectColumns;
         }
         if($fromIndex) {
-            $params['fromIndex'] = $toIndex;
+            $params['fromIndex'] = $fromIndex;
         }
         if($toIndex) {
             $params['toIndex'] = $toIndex;
         }
         if($sortColumnString) {
-            $params['sortColumnString'] = $toIndex;
+            $params['sortColumnString'] = $sortColumnString;
         }
         if($sortOrderString) {
-            $params['sortOrderString'] = $toIndex;
+            $params['sortOrderString'] = $sortOrderString;
         }
         if($lastModifiedTime) {
-            $params['lastModifiedTime'] = $lastModifiedTime->format("Y-m-j H:i:s");
+            $params['lastModifiedTime'] = $lastModifiedTime->format("Y-m-d H:i:s");
         }
 
         return $this->call($module, 'getRecords', $params);
@@ -197,10 +197,10 @@ class ZohoClient
     /**
      * Implements searchRecords API method.
      *
-     * @param $module
-     * @param null $searchCondition
-     * @param null $fromIndex
-     * @param null $toIndex
+     * @param string $module
+     * @param string $searchCondition
+     * @param int $fromIndex
+     * @param int $toIndex
      * @param \DateTime $lastModifiedTime
      * @param null $selectColumns
      * @return Response
