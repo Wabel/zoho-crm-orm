@@ -43,6 +43,14 @@ class ZohoClientTest extends PHPUnit_Framework_TestCase
         require __DIR__.'/generated/ContactZohoDao.php';
 
         $contactZohoDao = new \TestNamespace\ContactZohoDao($this->getClient());
+
+        // First, let's clean up the records (in case a previous test did not run correctly).
+        $records = $contactZohoDao->searchRecords("(First Name:TestMultiplePoolUser)");
+        foreach ($records as $record) {
+            $contactZohoDao->delete($record->getZohoId());
+        }
+
+
 //
 //        $lastName = uniqid("Test");
 //        $email = $lastName."@test.com";
@@ -133,18 +141,21 @@ class ZohoClientTest extends PHPUnit_Framework_TestCase
 //        $records = $contactZohoDao->searchRecords("(First Name:TestMultipleUser)");
 //        $this->assertCount(0, $records);
 
-        $records = $contactZohoDao->searchRecords("(First Name:TestMultiplePoolUser)", 1, 302);
+        $records = $contactZohoDao->searchRecords("(First Name:TestMultiplePoolUser)");
         $this->assertCount(302, $records);
 
+        $modifiedTime = $records[0]->getModifiedTime()->sub(DateInterval::createFromDateString("10 seconds"));
+
         // Test if the 302 Contacts has been well saved and are deleted
-        $records = $contactZohoDao->getRecords("Modified Time", "asc", $beforePoolMultiple);
+        //$records = $contactZohoDao->getRecords("Modified Time", "asc", $modifiedTime);
+        $records = $contactZohoDao->getRecords(null, null, $modifiedTime);
 
         $this->assertCount(302, $records);
         foreach ($records as $key=>$record) {
             $this->assertInstanceOf("\\TestNamespace\\Contact", $record);
             $this->assertEquals("TestMultiplePoolUser", $record->getFirstName());
-            $this->assertEquals($multiplePoolContact["lastName"][$key], $record->getLastName());
-            $this->assertEquals($multiplePoolContact["email"][$key], $record->getEmail());
+            $this->assertContains($record->getLastName(), $multiplePoolContact["lastName"]);
+            $this->assertContains($record->getEmail(), $multiplePoolContact["email"]);
             $contactZohoDao->delete($record->getZohoId());
         }
 

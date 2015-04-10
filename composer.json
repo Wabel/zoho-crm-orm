@@ -4,6 +4,7 @@
 	"type" : "library",
 	"homepage" : "http://mouf-php.com",
 	"keywords" : [
+	  	"Zoho CRM",
 		"ZohoCRM",
 		"Zoho",
 		"ORM"

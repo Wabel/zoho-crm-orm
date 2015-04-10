@@ -225,33 +225,39 @@ abstract class AbstractZohoDao
      * @param $sortOrderString
      * @param \DateTime $lastModifiedTime
      * @param $selectColumns
-     * @param $fromIndex
-     * @param $toIndex
+     * @param $limit
      * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
      * @throws ZohoCRMResponseException
      */
-    public function getRecords($sortColumnString = null, $sortOrderString = null, \DateTime $lastModifiedTime = null, $selectColumns = null, $fromIndex = null, $toIndex = null)
+    public function getRecords($sortColumnString = null, $sortOrderString = null, \DateTime $lastModifiedTime = null, $selectColumns = null, $limit = null)
     {
-        try {
-            $response = $this->zohoClient->getRecords($this->getModule(), $sortColumnString, $sortOrderString, $lastModifiedTime, $selectColumns, $fromIndex, $toIndex);
+        $globalResponse = array();
 
-            if(count($response->getRecords()) == self::MAX_GET_RECORDS) {
-                return array_merge(
-                    $this->getBeansFromResponse($response),
-                    $this->getRecords($sortColumnString, $sortOrderString, $lastModifiedTime, $selectColumns, count($response->getRecords())+1,  self::MAX_GET_RECORDS)
-                );
+        do {
+            try {
+                $fromIndex = count($globalResponse)+1;
+                $toIndex = $fromIndex + self::MAX_GET_RECORDS - 1;
+
+                if ($limit) {
+                    $toIndex = min($limit - 1, $toIndex);
+                }
+
+                $response = $this->zohoClient->getRecords($this->getModule(), $sortColumnString, $sortOrderString, $lastModifiedTime, $selectColumns, $fromIndex, $toIndex);
+                $beans = $this->getBeansFromResponse($response);
+            } catch (ZohoCRMResponseException $e) {
+                // No records found? Let's return an empty array!
+                if ($e->getCode() == 4422) {
+                    $beans = array();
+                } else {
+                    throw $e;
+                }
             }
-            else {
-                return $this->getBeansFromResponse($response);
-            }
-        } catch (ZohoCRMResponseException $e) {
-            // No records found? Let's return an empty array!
-            if ($e->getCode() == 4422) {
-                return array();
-            } else {
-                throw $e;
-            }
-        }
+
+            $globalResponse = array_merge($globalResponse, $beans);
+
+        } while (count($beans) == self::MAX_GET_RECORDS);
+
+        return $globalResponse;
     }
 
     /**
@@ -259,82 +265,80 @@ abstract class AbstractZohoDao
      *
      * @param string $id Zoho Id of the record to delete
      * @param string $parentModule The parent module of the records
-     * @param int $fromIndex The offset from which you want parse Zoho
-     * @param int $toIndex The offset to which you want to parse Zoho
+     * @param int $limit The max number of records to fetch
      * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
      * @throws ZohoCRMResponseException
      */
-    public function getRelatedRecords($id, $parentModule, $fromIndex = null, $toIndex = 200)
+    public function getRelatedRecords($id, $parentModule, $limit = null)
     {
-        try {
-            $response = $this->zohoClient->getRelatedRecords($this->getModule(), $id, $parentModule, $fromIndex, $toIndex);
+        $globalResponse = array();
 
-            if(count($response->getRecords()) == count($toIndex)) {
-                return array_merge(
-                    $this->getBeansFromResponse($response),
-                    $this->getRelatedRecords($id, $parentModule, $toIndex + 1, $toIndex + 200)
-                );
+        do {
+            try {
+                $fromIndex = count($globalResponse)+1;
+                $toIndex = $fromIndex + self::MAX_GET_RECORDS - 1;
+
+                if ($limit) {
+                    $toIndex = min($limit - 1, $toIndex);
+                }
+
+                $response = $this->zohoClient->getRelatedRecords($this->getModule(), $id, $parentModule, $fromIndex, $toIndex);
+                $beans = $this->getBeansFromResponse($response);
+            } catch (ZohoCRMResponseException $e) {
+                // No records found? Let's return an empty array!
+                if ($e->getCode() == 4422) {
+                    $beans = array();
+                } else {
+                    throw $e;
+                }
             }
-            else {
-                return $this->getBeansFromResponse($response);
-            }
-        } catch (ZohoCRMResponseException $e) {
-            // No records found? Let's return an empty array!
-            if ($e->getCode() == 4422) {
-                return array();
-            } else {
-                throw $e;
-            }
-        }
+
+            $globalResponse = array_merge($globalResponse, $beans);
+
+        } while (count($beans) == self::MAX_GET_RECORDS);
+
+        return $globalResponse;
     }
 
     /**
      * Implements searchRecords API method.
      *
      * @param string $searchCondition The search criteria formatted like
-     * @param int $fromIndex The offset from which you want parse Zoho
-     * @param int $toIndex The offset to which you want to parse Zoho
+     * @param int $limit The maximum number of beans returned from Zoho
      * @param \DateTime $lastModifiedTime
      * @param string $selectColumns The list
      * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
      * @throws ZohoCRMResponseException
      */
-    public function searchRecords($searchCondition = null, $fromIndex = 1, $toIndex = null, \DateTime $lastModifiedTime = null, $selectColumns = null)
+    public function searchRecords($searchCondition = null, $limit = null, \DateTime $lastModifiedTime = null, $selectColumns = null)
     {
-        try {
-            // Dealing with limits bigger than the max authorized limit
-            if(!$toIndex) {
-                $nextToIndex = null;
-                $limit = self::MAX_GET_RECORDS;
-            }
-            elseif($toIndex > self::MAX_GET_RECORDS) {
-                $nextToIndex = $toIndex - self::MAX_GET_RECORDS;
-                $limit = self::MAX_GET_RECORDS;
-            }
-            else {
-                $nextToIndex = 0;
-                $limit = $toIndex;
+        $globalResponse = array();
+
+        do {
+            try {
+                $fromIndex = count($globalResponse)+1;
+                $toIndex = $fromIndex + self::MAX_GET_RECORDS - 1;
+
+                if ($limit) {
+                    $toIndex = min($limit - 1, $toIndex);
+                }
+
+                $response = $this->zohoClient->searchRecords($this->getModule(), $searchCondition, $fromIndex, $toIndex, $lastModifiedTime, $selectColumns);
+                $beans = $this->getBeansFromResponse($response);
+            } catch (ZohoCRMResponseException $e) {
+                // No records found? Let's return an empty array!
+                if ($e->getCode() == 4422) {
+                    $beans = array();
+                } else {
+                    throw $e;
+                }
             }
 
-            $response = $this->zohoClient->searchRecords($this->getModule(), $searchCondition, $fromIndex, $limit, $lastModifiedTime, $selectColumns);
+            $globalResponse = array_merge($globalResponse, $beans);
 
-            if((!$nextToIndex && count($response->getRecords()) == self::MAX_GET_RECORDS) || $toIndex > self::MAX_GET_RECORDS) {
-                return array_merge(
-                    $this->getBeansFromResponse($response),
-                    $this->searchRecords($searchCondition, $fromIndex + self::MAX_GET_RECORDS, $nextToIndex, $lastModifiedTime, $selectColumns)
-                );
-            }
-            else {
-                return $this->getBeansFromResponse($response);
-            }
-        } catch (ZohoCRMResponseException $e) {
-            // No records found? Let's return an empty array!
-            if ($e->getCode() == 4422) {
-                return array();
-            } else {
-                throw $e;
-            }
-        }
+        } while (count($beans) == self::MAX_GET_RECORDS);
+
+        return $globalResponse;
     }
 
     /**
