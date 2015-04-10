@@ -6,6 +6,7 @@ use gossi\codegen\model\PhpClass;
 use gossi\codegen\model\PhpMethod;
 use gossi\codegen\model\PhpParameter;
 use gossi\codegen\model\PhpProperty;
+use Psr\Log\LoggerInterface;
 use Wabel\Zoho\CRM\ZohoClient;
 use Wabel\Zoho\CRM\Exception\ZohoCRMException;
 
@@ -15,9 +16,11 @@ use Wabel\Zoho\CRM\Exception\ZohoCRMException;
 class EntitiesGeneratorService {
 
     private $zohoClient;
+    private $logger;
 
-    public function __construct(ZohoClient $zohoClient) {
+    public function __construct(ZohoClient $zohoClient, LoggerInterface $logger) {
         $this->zohoClient = $zohoClient;
+        $this->logger = $logger;
     }
 
     /**
@@ -32,7 +35,12 @@ class EntitiesGeneratorService {
             try {
                 $this->generateModule($module['key'], $module['pl'], $module['sl'], $targetDirectory, $namespace);
             } catch (ZohoCRMException $e) {
-                error_log("Error thrown when retrieving fields for module ".$module['key'].". Error message: ".$e->getMessage());
+                $this->logger->notice("Error thrown when retrieving fields for module {module}. Error message: {error}.",
+                    [
+                        "module" => $module['key'],
+                        "error" => $e->getMessage(),
+                        "exception" => $e
+                    ]);
             }
         }
     }
@@ -58,7 +66,11 @@ class EntitiesGeneratorService {
 
     public function generateBean($fields, $namespace, $className, $moduleName, $targetDirectory) {
 
-        $class = PhpClass::create();
+//        if (class_exists($namespace."\\".$className)) {
+//            $class = PhpClass::fromReflection(new \ReflectionClass($namespace."\\".$className));
+//        } else {
+            $class = PhpClass::create();
+//        }
 
         $class->setName($className)
             ->setNamespace($namespace)
@@ -104,13 +116,8 @@ class EntitiesGeneratorService {
                     $generateId = false;
 
                     if($customfield) {
-                        $modules = $this->zohoClient->getModules();
-                        foreach ($modules->getRecords() as $module) {
-                            if($module["sl"] == $name) {
-                                $name = $module["sl"]."_ID";
-                                $generateId = true;
-                            }
-                        }
+                        $name .= "_ID";
+                        $generateId = true;
                     }
                     else {
                         switch($name) {
@@ -123,6 +130,11 @@ class EntitiesGeneratorService {
                                 $name = "CONTACTID";
                                 $generateId = true;
                                 break;
+                            default :
+                                $this->logger->warning("Unable to set a ID for the field {name} of the {module} module", [
+                                    "name" => $name,
+                                    "module" => $moduleName
+                                ]);
                         }
                     }
 
@@ -158,8 +170,11 @@ class EntitiesGeneratorService {
     }
 
     public function generateDao($fields, $namespace, $className, $daoClassName, $moduleName, $targetDirectory) {
-
-        $class = PhpClass::create();
+//        if (class_exists($namespace."\\".$className)) {
+//            $class = PhpClass::fromReflection(new \ReflectionClass($namespace."\\".$daoClassName));
+//        } else {
+            $class = PhpClass::create();
+//        }
 
         $class->setName($daoClassName)
             ->setNamespace($namespace)
@@ -174,42 +189,35 @@ class EntitiesGeneratorService {
                 $fields[$key][$name]['setter'] = "set".ucfirst(self::camelCase($name));
 
                 if($type === "Lookup") {
-                    $fieldName = null;
-                    $fieldModule = null;
+                    $generateId = false;
 
                     if ($field["customfield"]) {
-                        $modules = $this->zohoClient->getModules();
-                        foreach ($modules->getRecords() as $module) {
-                            if ($module["sl"] == $field["label"]) {
-                                $fieldName = $module["sl"] . "_ID";
-                                $fieldModule = str_replace(" ", "", $module["sl"]);
-                                break;
-                            }
-                        }
+                        $name .= "_ID";
+                        $generateId = true;
                     } else {
                         switch ($field["label"]) {
                             //TODO : To be completed with known lookup fields that are not custom fields but default in Zoho
                             case "Account Name" :
-                                $fieldName = "ACCOUNTID";
-                                $fieldModule = "Account";
+                                $name = "ACCOUNTID";
+                                $generateId = true;
                                 break;
                             case "Contact Name" :
-                                $fieldName = "CONTACTID";
-                                $fieldModule = "Contact";
+                                $name = "CONTACTID";
+                                $generateId = true;
                                 break;
                         }
                     }
-                    if($fieldName) {
-                        $fields[$key][$fieldName]["req"] = false;
-                        $fields[$key][$fieldName]["type"] = "Lookup ID";
-                        $fields[$key][$fieldName]["isreadonly"] = true;
-                        $fields[$key][$fieldName]["maxlength"] = 100;
-                        $fields[$key][$fieldName]["label"] = $fieldName;
-                        $fields[$key][$fieldName]["dv"] = $fieldName;
-                        $fields[$key][$fieldName]["customfield"] = true;
-                        $fields[$key][$fieldName]['phpType'] = $phpType;
-                        $fields[$key][$fieldName]['getter'] = "get".$fieldModule."Id";
-                        $fields[$key][$fieldName]['setter'] = "set".$fieldModule."Id";
+                    if($generateId) {
+                        $fields[$key][$name]["req"] = false;
+                        $fields[$key][$name]["type"] = "Lookup ID";
+                        $fields[$key][$name]["isreadonly"] = true;
+                        $fields[$key][$name]["maxlength"] = 100;
+                        $fields[$key][$name]["label"] = $name;
+                        $fields[$key][$name]["dv"] = $name;
+                        $fields[$key][$name]["customfield"] = true;
+                        $fields[$key][$name]['phpType'] = $phpType;
+                        $fields[$key][$name]['getter'] = "get".ucfirst(self::camelCase($name));
+                        $fields[$key][$name]['setter'] = "set".ucfirst(self::camelCase($name));
                     }
                 }
             }
