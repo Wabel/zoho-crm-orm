@@ -88,7 +88,15 @@ abstract class AbstractZohoDao
 
                     switch ($fields[$key]['type']) {
                         case "Date":
-                            $value = \DateTime::createFromFormat('M/d/Y', $value);
+                            if($dateObj = \DateTime::createFromFormat('M/d/Y', $value)) {
+                                $value = $dateObj;
+                            }
+                            elseif($dateObj = \DateTime::createFromFormat('Y-m-d', $value)) {
+                                $value = $dateObj;
+                            }
+                            else {
+                                throw new ZohoCRMException("Unable to convert the Date field \"".$key."\" into a DateTime PHP object from the the record $id of the module ".$this->getModule().".");
+                            }
                             break;
                         case "DateTime":
                             $value = \DateTime::createFromFormat('Y-m-d H:i:s', $value);
@@ -350,7 +358,7 @@ abstract class AbstractZohoDao
      * @param bool $isApproval Whether or not to push the record into an approval sandbox first
      * @throws ZohoCRMResponseException
      */
-    public function insertRecords($beans, $wfTrigger = null, $duplicateCheck = null, $isApproval = null)
+    public function insertRecords($beans, $wfTrigger = null, $duplicateCheck = 2, $isApproval = null)
     {
         $records = [];
 
