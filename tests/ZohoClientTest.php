@@ -162,4 +162,16 @@ class ZohoClientTest extends PHPUnit_Framework_TestCase
         $records = $contactZohoDao->searchRecords("(First Name:TestMultiplePoolUser)");
         $this->assertCount(0, $records);
     }
+
+    protected function tearDown()
+    {
+        if (class_exists('\TestNamespace\ContactZohoDao')) {
+            $contactZohoDao = new \TestNamespace\ContactZohoDao($this->getClient());
+            // Let's end by removing past inserted clients:
+            $pastContacts = $contactZohoDao->searchRecords('(First Name:TestMultiplePoolUser)');
+            foreach ($pastContacts as $pastContact) {
+                $contactZohoDao->delete($pastContact->getZohoId());
+            }
+        }
+    }
 }
