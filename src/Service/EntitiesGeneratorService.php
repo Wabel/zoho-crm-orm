@@ -98,6 +98,9 @@ class EntitiesGeneratorService {
                     case "Boolean":
                         $phpType = "bool";
                         break;
+                    case "Integer":
+                        $phpType = "int";
+                        break;
                     default:
                         $phpType = "string";
                         break;
@@ -183,7 +186,23 @@ class EntitiesGeneratorService {
         foreach ($fields as $key=>$fieldCategory) {
             foreach ($fieldCategory as $name=>$field) {
                 $type = $field['type'];
-                $phpType = (($type=="DateTime" || $type=="Date")?"\\DateTime":"string");
+
+                switch ($type) {
+                    case "DateTime":
+                    case "Date":
+                        $phpType = "\\DateTime";
+                        break;
+                    case "Boolean":
+                        $phpType = "bool";
+                        break;
+                    case "Integer":
+                        $phpType = "int";
+                        break;
+                    default:
+                        $phpType = "string";
+                        break;
+                }
+
                 $fields[$key][$name]['phpType'] = $phpType;
                 $fields[$key][$name]['getter'] = "get".ucfirst(self::camelCase($name));
                 $fields[$key][$name]['setter'] = "set".ucfirst(self::camelCase($name));
