@@ -2,6 +2,7 @@
 namespace Wabel\Zoho\CRM\Service;
 
 
+use Psr\Log\NullLogger;
 use Wabel\Zoho\CRM\ZohoClient;
 
 class EntitiesGeneratorServiceTest extends \PHPUnit_Framework_TestCase {
@@ -9,7 +10,7 @@ class EntitiesGeneratorServiceTest extends \PHPUnit_Framework_TestCase {
     public function getEntitiesGeneratorService()
     {
         $client =  new ZohoClient($GLOBALS['auth_token']);
-        return new EntitiesGeneratorService($client);
+        return new EntitiesGeneratorService($client, new NullLogger());
     }
 
     public function testGenerateAll() {
