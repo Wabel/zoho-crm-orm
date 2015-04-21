@@ -377,7 +377,7 @@ abstract class AbstractZohoDao
 
             if (substr($record['code'], 0, 1) != "2") {
                 // This field is probably in error!
-                throw new ZohoCRMException('An error occurred while inserting records: '.$record['details'], $record['code']);
+                throw new ZohoCRMException('An error occurred while inserting records: '.$record['message'], $record['code']);
             }
 
             $bean->setZohoId($record['Id']);
