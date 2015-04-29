@@ -152,7 +152,7 @@ abstract class AbstractZohoDao
                     switch ($params['type']) {
                         case "Date":
                             /** @var \DateTime $value */
-                            $value = $value->format('M/d/Y');
+                            $value = $value->format('m/d/Y');
                             break;
                         case "DateTime":
                             /** @var \DateTime $value */
