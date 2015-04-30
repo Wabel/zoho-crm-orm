@@ -152,7 +152,7 @@ abstract class AbstractZohoDao
                     switch ($params['type']) {
                         case "Date":
                             /** @var \DateTime $value */
-                            $value = $value->format('M/d/Y');
+                            $value = $value->format('m/d/Y');
                             break;
                         case "DateTime":
                             /** @var \DateTime $value */
@@ -377,7 +377,7 @@ abstract class AbstractZohoDao
 
             if (substr($record['code'], 0, 1) != "2") {
                 // This field is probably in error!
-                throw new ZohoCRMException('An error occurred while inserting records: '.$record['details'], $record['code']);
+                throw new ZohoCRMException('An error occurred while inserting records: '.$record['message'], $record['code']);
             }
 
             $bean->setZohoId($record['Id']);
