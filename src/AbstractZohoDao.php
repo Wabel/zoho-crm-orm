@@ -489,11 +489,11 @@ abstract class AbstractZohoDao
             }
         }
 
-        if ($toUpdate) {
-            $this->updateRecords($toUpdate, $wfTrigger);
-        }
         if ($toInsert) {
             $this->insertRecords($toInsert, $wfTrigger, $duplicateCheck, $isApproval);
+        }
+        if ($toUpdate) {
+            $this->updateRecords($toUpdate, $wfTrigger);
         }
     }
 }
