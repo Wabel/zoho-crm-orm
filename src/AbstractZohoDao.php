@@ -4,6 +4,7 @@ namespace Wabel\Zoho\CRM;
 use GuzzleHttp\Client;
 use Wabel\Zoho\CRM\Exception\ZohoCRMException;
 use Wabel\Zoho\CRM\Exception\ZohoCRMResponseException;
+use Wabel\Zoho\CRM\Exception\ZohoCRMUpdateException;
 use Wabel\Zoho\CRM\Request\Response;
 
 /**
@@ -413,22 +414,29 @@ abstract class AbstractZohoDao
             throw new ZohoCRMException("Error while inserting beans in Zoho. ".count($beans)." passed in parameter, but ".count($records)." returned.");
         }
 
+        $exceptions = new \SplObjectStorage();
+
         foreach ($beans as $key=>$bean) {
             $record = $records[$key];
 
             if (substr($record['code'], 0, 1) != "2") {
                 // This field is probably in error!
-                throw new ZohoCRMException('An error occurred while updating records. '.(isset($record['message'])?$record['message']:""), $record['code']);
+                $exceptions->attach($bean, new ZohoCRMException('An error occurred while updating records. '.(isset($record['message'])?$record['message']:""), $record['code']));
+                continue;
             }
 
             if ($record['Id'] != $bean->getZohoId()) {
                 // This field is probably in error!
-                throw new ZohoCRMException('An error occurred while updating records. The Zoho ID to update was '.$bean->getZohoId().', returned '.$record['Id']);
+                $exceptions->attach($bean, new ZohoCRMException('An error occurred while updating records. The Zoho ID to update was '.$bean->getZohoId().', returned '.$record['Id']));
+                continue;
             }
 
             if ($record['Modified Time']) {
                 $bean->setModifiedTime(\DateTime::createFromFormat('Y-m-d H:i:s', $record['Modified Time']));
             }
+        }
+        if ($exceptions->count() != 0) {
+            throw new ZohoCRMUpdateException($exceptions);
         }
     }
 

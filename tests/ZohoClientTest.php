@@ -39,8 +39,8 @@ class ZohoClientTest extends PHPUnit_Framework_TestCase
      * @throws \Wabel\Zoho\CRM\Exception\ZohoCRMResponseException
      */
     public function testDao() {
-        require __DIR__.'/generated/Contact.php';
-        require __DIR__.'/generated/ContactZohoDao.php';
+        require_once __DIR__.'/generated/Contact.php';
+        require_once __DIR__.'/generated/ContactZohoDao.php';
 
         $contactZohoDao = new \TestNamespace\ContactZohoDao($this->getClient());
 
@@ -161,6 +161,46 @@ class ZohoClientTest extends PHPUnit_Framework_TestCase
 
         $records = $contactZohoDao->searchRecords("(First Name:TestMultiplePoolUser)");
         $this->assertCount(0, $records);
+    }
+
+    /**
+     * @throws Exception
+     * @throws \Wabel\Zoho\CRM\Exception\ZohoCRMResponseException
+     */
+    public function testDaoUpdateException() {
+        require_once __DIR__.'/generated/Contact.php';
+        require_once __DIR__.'/generated/ContactZohoDao.php';
+
+        $contactZohoDao = new \TestNamespace\ContactZohoDao($this->getClient());
+
+        // Now, let's try to update records that do not exist.
+        $notExistingRecords = array();
+
+        $contact1 = new \TestNamespace\Contact();
+        $contact1->setZohoId("123495843958439432");
+        $contact1->setLastName("I DONT EXIST");
+        $contact1->setFirstName("I DONT EXIST");
+        $contact1->setEmail("i.dont@exist.com");
+        $notExistingRecords[] = $contact1;
+
+        $contact2 = new \TestNamespace\Contact();
+        $contact2->setZohoId("54349584395439432");
+        $contact2->setLastName("I DONT EXIST AT ALL");
+        $contact2->setFirstName("I DONT EXIST AT ALL");
+        $contact2->setEmail("i.dont@existatall.com");
+        $notExistingRecords[] = $contact2;
+
+        $updateExceptionTriggered = false;
+        try {
+            $contactZohoDao->updateRecords($notExistingRecords);
+        } catch (\Wabel\Zoho\CRM\Exception\ZohoCRMUpdateException $updateException) {
+            $updateExceptionTriggered = true;
+            $failedBeans = $updateException->getFailedBeans();
+            $this->assertTrue($failedBeans->offsetExists($contact1));
+            $this->assertTrue($failedBeans->offsetExists($contact2));
+            $this->assertEquals(2, $failedBeans->count());
+        }
+        $this->assertTrue($updateExceptionTriggered);
     }
 
     protected function tearDown()
