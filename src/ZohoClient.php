@@ -301,7 +301,7 @@ class ZohoClient
         $params['version'] = 4;
         $params['newFormat'] = 1;
         if($wfTrigger) {
-            $params['wfTrigger'] = $wfTrigger;
+            $params['wfTrigger'] = "true";
         }
 
         return $this->call($module, 'updateRecords', $params, ["xmlData" => $xmlData->asXML()]);
