@@ -160,7 +160,6 @@ class EntitiesGeneratorService {
                     }
                 }
             }
-
         }
 
         self::registerProperty($class, "createdTime", "The time the record was created in Zoho\nType: DateTime\n", "\\DateTime");
@@ -169,7 +168,9 @@ class EntitiesGeneratorService {
         $generator = new CodeFileGenerator();
         $code = $generator->generate($class);
 
-        file_put_contents(rtrim($targetDirectory,'/').'/'.$className.".php", $code);
+        if(!file_put_contents(rtrim($targetDirectory,'/').'/'.$className.".php", $code)) {
+            throw new ZohoCRMException("An error occurred while creating the class $className. Please verify the target directory or the rights of the file.");
+        }
     }
 
     public function generateDao($fields, $namespace, $className, $daoClassName, $moduleName, $targetDirectory) {
@@ -251,7 +252,9 @@ class EntitiesGeneratorService {
         $generator = new CodeFileGenerator();
         $code = $generator->generate($class);
 
-        file_put_contents(rtrim($targetDirectory,'/').'/'.$daoClassName.".php", $code);
+        if(!file_put_contents(rtrim($targetDirectory,'/').'/'.$daoClassName.".php", $code)) {
+            throw new ZohoCRMException("An error occurred while creating the DAO $daoClassName. Please verify the target directory exists or the rights of the file.");
+        }
     }
 
     private static function camelCase($str, array $noStrip = [])
