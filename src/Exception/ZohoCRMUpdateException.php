@@ -23,8 +23,8 @@ class ZohoCRMUpdateException extends ZohoCRMException
          * @var ZohoBeanInterface $bean
          * @var ZohoCRMException $error
          */
-        foreach($this->failedBeans AS $error) {
-            $this->errorMessage .= "\n"."[".$this->failedBeans->current()->getZohoId()."] ".$error->getMessage();
+        foreach($this->failedBeans AS $key) {
+            $this->errorMessage .= "\n"."[".$this->getFailedBeans()->current()->getZohoId()."] ".$this->getFailedBeans()->getInfo()->getMessage();
         }
 
         // Repositioning the pointer at the beginning
