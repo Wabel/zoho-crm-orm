@@ -1,5 +1,6 @@
 <?php
 namespace Wabel\Zoho\CRM\Exception;
+use Wabel\Zoho\CRM\ZohoBeanInterface;
 
 /**
  * Zoho CRM Exception triggered when an update fails. For instance, the ZohoID passed for a bean
@@ -9,13 +10,22 @@ namespace Wabel\Zoho\CRM\Exception;
 class ZohoCRMUpdateException extends ZohoCRMException
 {
     private $failedBeans;
+    private $errorMessage = "Some beans could not be updated in Zoho.";
 
     /**
      * @param \SplObjectStorage $failedBeans Key: the bean that failed. Value: the associated exception.
      */
     public function __construct(\SplObjectStorage $failedBeans) {
         $this->failedBeans = $failedBeans;
-        parent::__construct("Some beans could not be updated in Zoho.");
+
+        /**
+         * @var ZohoBeanInterface $bean
+         * @var ZohoCRMException $error
+         */
+        foreach($this->failedBeans AS $bean => $error) {
+            $this->errorMessage .= "\n"."[".$bean->getZohoId()."] ".$error->getMessage();
+        }
+        parent::__construct($this->errorMessage);
     }
 
     /**
