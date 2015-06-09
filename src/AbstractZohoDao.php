@@ -441,6 +441,34 @@ abstract class AbstractZohoDao
     }
 
     /**
+     * Triggers workflows while updating a single record.
+     *
+     * @param ZohoBeanInterface $bean The bean representing the affected record.
+     * @throws ZohoCRMException
+     */
+    public function updateAndTriggerWorkflow(ZohoBeanInterface $bean)
+    {
+        $xmlData = $this->toXml([$bean]);
+
+        $response = $this->zohoClient->updateRecords($this->getModule(), $xmlData, $bean->getZohoId(), "true", 2);
+
+        $records = $response->getRecords();
+        $record = $records[0];
+
+        if (substr($record['code'], 0, 1) != "2" || !$record['code']) {
+            // This field is probably in error!
+            throw new ZohoCRMException('An error occurred while updating records. '.(isset($record['message'])?$record['message']:""), $record['code']);
+        }
+        if ($record['Id'] != $bean->getZohoId()) {
+            // This field is probably in error!
+            throw new ZohoCRMException('An error occurred while updating records. The Zoho ID to update was '.$bean->getZohoId().', returned '.$record['Id']);
+        }
+        if ($record['Modified Time']) {
+            $bean->setModifiedTime(\DateTime::createFromFormat('Y-m-d H:i:s', $record['Modified Time']));
+        }
+    }
+
+    /**
      * Implements uploadFile API method.
      *
      * @param string $id Zoho Id of the record to retrieve
@@ -471,6 +499,7 @@ abstract class AbstractZohoDao
      * @param array|object $beans A bean or an array of beans.
      *
      * TODO: isApproval is not used by each module.
+     * TODO: wfTrigger only usable for a single record update/insert.
      */
     public function save($beans, $wfTrigger = false, $duplicateCheck = self::ON_DUPLICATE_MERGE, $isApproval = false)
     {

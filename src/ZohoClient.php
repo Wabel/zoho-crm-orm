@@ -295,13 +295,16 @@ class ZohoClient
      * @return Response
      * @throws ZohoCRMResponseException
      */
-    public function updateRecords($module, $xmlData, $id = null, $wfTrigger = null)
+    public function updateRecords($module, $xmlData, $id = null, $wfTrigger = null, $version = 4)
     {
 
-        $params['version'] = 4;
         $params['newFormat'] = 1;
+        $params['version'] = $version;
         if($wfTrigger) {
             $params['wfTrigger'] = "true";
+        }
+        if($id) {
+            $params['id'] = $id;
         }
 
         return $this->call($module, 'updateRecords', $params, ["xmlData" => $xmlData->asXML()]);

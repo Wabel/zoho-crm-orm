@@ -303,6 +303,9 @@ class Response
 
         if ($this->method == 'getRecordById') {
             $id = strtoupper(substr($this->module, 0, -1)).'ID';
+            if(!isset($this->records[1][$id])) {
+                $id = strtoupper($this->module).'_ID';
+            }
             $this->recordId = $this->records[1][$id];
         }
     }
