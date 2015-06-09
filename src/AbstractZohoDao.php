@@ -452,17 +452,18 @@ abstract class AbstractZohoDao
 
         $response = $this->zohoClient->updateRecords($this->getModule(), $xmlData, $bean->getZohoId(), "true", 2);
 
-        $records = $response->getRecords();
-        $record = $records[0];
 
-        if (substr($record['code'], 0, 1) != "2" || !$record['code']) {
+        if ($response->getCode() && substr($response->getCode(), 0, 1) != "2") {
             // This field is probably in error!
-            throw new ZohoCRMException('An error occurred while updating records. '.(isset($record['message'])?$record['message']:""), $record['code']);
+            throw new ZohoCRMException('An error occurred while updating records. '.($response->getMessage())?$response->getMessage():"", $response->getCode());
         }
-        if ($record['Id'] != $bean->getZohoId()) {
+        if ($response->getRecordId() != $bean->getZohoId()) {
             // This field is probably in error!
-            throw new ZohoCRMException('An error occurred while updating records. The Zoho ID to update was '.$bean->getZohoId().', returned '.$record['Id']);
+            throw new ZohoCRMException('An error occurred while updating records. The Zoho ID to update was '.$bean->getZohoId().', returned '.$response->getRecordId());
         }
+
+        $record = $response->getRecords()[0];
+
         if ($record['Modified Time']) {
             $bean->setModifiedTime(\DateTime::createFromFormat('Y-m-d H:i:s', $record['Modified Time']));
         }
