@@ -19,12 +19,17 @@ class ZohoCRMUpdateException extends ZohoCRMException
         $this->failedBeans = $failedBeans;
 
         /**
+         * Building the error message by iterating the SplObjectStorage
          * @var ZohoBeanInterface $bean
          * @var ZohoCRMException $error
          */
-        foreach($this->failedBeans AS $bean => $error) {
-            $this->errorMessage .= "\n"."[".$bean->getZohoId()."] ".$error->getMessage();
+        foreach($this->failedBeans AS $key) {
+            $this->errorMessage .= "\n"."[".$this->getFailedBeans()->current()->getZohoId()."] ".$this->getFailedBeans()->getInfo()->getMessage();
         }
+
+        // Repositioning the pointer at the beginning
+        $this->failedBeans->rewind();
+
         parent::__construct($this->errorMessage);
     }
 
