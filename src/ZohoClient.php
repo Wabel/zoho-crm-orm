@@ -268,7 +268,7 @@ class ZohoClient
      * @return Response
      * @throws ZohoCRMResponseException
      */
-    public function insertRecords($module, $xmlData, $wfTrigger = null, $duplicateCheck = null, $isApproval = null)
+    public function insertRecords($module, $xmlData, $wfTrigger = null, $duplicateCheck = null, $isApproval = null, $version = 4, $newFormat = 2)
     {
         if($wfTrigger) {
             $params['wfTrigger'] = $wfTrigger;
@@ -279,8 +279,8 @@ class ZohoClient
         if($isApproval) {
             $params['isApproval'] = $isApproval;
         }
-        $params['newFormat'] = 1;
-        $params['version'] = 4;
+        $params['newFormat'] = $newFormat;
+        $params['version'] = $version;
 
         return $this->call($module, 'insertRecords', $params, ["xmlData" => $xmlData->asXML()]);
     }
@@ -295,10 +295,10 @@ class ZohoClient
      * @return Response
      * @throws ZohoCRMResponseException
      */
-    public function updateRecords($module, $xmlData, $id = null, $wfTrigger = null, $version = 4)
+    public function updateRecords($module, $xmlData, $id = null, $wfTrigger = null, $version = 4, $newFormat = 2)
     {
 
-        $params['newFormat'] = 1;
+        $params['newFormat'] = $newFormat;
         $params['version'] = $version;
         if($wfTrigger) {
             $params['wfTrigger'] = "true";

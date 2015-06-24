@@ -441,6 +441,35 @@ abstract class AbstractZohoDao
     }
 
     /**
+     * Triggers workflows while inserting a single record.
+     *
+     * @param ZohoBeanInterface $bean The bean representing the affected record.
+     * @throws ZohoCRMException
+     */
+    public function insertAndTriggerWorkflow(ZohoBeanInterface $bean)
+    {
+        $xmlData = $this->toXml([$bean]);
+
+        $response = $this->zohoClient->insertRecords($this->getModule(), $xmlData, "true", 2);
+
+
+        if ($response->getCode() && substr($response->getCode(), 0, 1) != "2") {
+            // This field is probably in error!
+            throw new ZohoCRMException('An error occurred while inserting records. '.($response->getMessage())?$response->getMessage():"", $response->getCode());
+        }
+        if ($response->getRecordId() != $bean->getZohoId()) {
+            // This field is probably in error!
+            throw new ZohoCRMException('An error occurred while inserting records. The Zoho ID to update was '.$bean->getZohoId().', returned '.$response->getRecordId());
+        }
+
+        $record = $response->getRecords()[1];
+
+        if ($record['Modified Time']) {
+            $bean->setModifiedTime(\DateTime::createFromFormat('Y-m-d H:i:s', $record['Modified Time']));
+        }
+    }
+
+    /**
      * Triggers workflows while updating a single record.
      *
      * @param ZohoBeanInterface $bean The bean representing the affected record.
@@ -462,7 +491,7 @@ abstract class AbstractZohoDao
             throw new ZohoCRMException('An error occurred while updating records. The Zoho ID to update was '.$bean->getZohoId().', returned '.$response->getRecordId());
         }
 
-        $record = $response->getRecords()[0];
+        $record = $response->getRecords()[1];
 
         if ($record['Modified Time']) {
             $bean->setModifiedTime(\DateTime::createFromFormat('Y-m-d H:i:s', $record['Modified Time']));
