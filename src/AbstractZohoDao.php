@@ -462,7 +462,7 @@ abstract class AbstractZohoDao
             throw new ZohoCRMException('An error occurred while inserting records. The Zoho ID to update was '.$bean->getZohoId().', returned '.$response->getRecordId());
         }
 
-        $record = $response->getRecords()[1];
+        $record = array_shift($response->getRecords());
 
         if ($record['Modified Time']) {
             $bean->setModifiedTime(\DateTime::createFromFormat('Y-m-d H:i:s', $record['Modified Time']));
@@ -491,7 +491,7 @@ abstract class AbstractZohoDao
             throw new ZohoCRMException('An error occurred while updating records. The Zoho ID to update was '.$bean->getZohoId().', returned '.$response->getRecordId());
         }
 
-        $record = $response->getRecords()[1];
+        $record = array_shift($response->getRecords());
 
         if ($record['Modified Time']) {
             $bean->setModifiedTime(\DateTime::createFromFormat('Y-m-d H:i:s', $record['Modified Time']));
