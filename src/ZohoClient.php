@@ -262,22 +262,22 @@ class ZohoClient
      *
      * @param $module
      * @param \SimpleXMLElement$xmlData
-     * @param null $wfTrigger
-     * @param null $duplicateCheck
-     * @param null $isApproval
+     * @param bool $wfTrigger
+     * @param int $duplicateCheck
+     * @param bool $isApproval
      * @return Response
      * @throws ZohoCRMResponseException
      */
     public function insertRecords($module, $xmlData, $wfTrigger = null, $duplicateCheck = null, $isApproval = null, $version = 4, $newFormat = 2)
     {
         if($wfTrigger) {
-            $params['wfTrigger'] = $wfTrigger;
+            $params['wfTrigger'] = "true";
         }
         if($duplicateCheck) {
             $params['duplicateCheck'] = $duplicateCheck;
         }
         if($isApproval) {
-            $params['isApproval'] = $isApproval;
+            $params['isApproval'] = "true";
         }
         $params['newFormat'] = $newFormat;
         $params['version'] = $version;
@@ -290,8 +290,8 @@ class ZohoClient
      *
      * @param $module
      * @param \SimpleXMLElement $xmlData
-     * @param null $id
-     * @param null $wfTrigger
+     * @param string $id
+     * @param bool $wfTrigger
      * @return Response
      * @throws ZohoCRMResponseException
      */

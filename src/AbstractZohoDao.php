@@ -124,7 +124,7 @@ abstract class AbstractZohoDao
      * @param $zohoBeans ZohoBeanInterface[]
      * @return \SimpleXMLElement The SimpleXMLElement containing the XML for a request
      */
-    protected function toXml($zohoBeans)
+    public function toXml($zohoBeans)
     {
         $module = $this->getModule();
 
@@ -353,6 +353,10 @@ abstract class AbstractZohoDao
     /**
      * Implements insertRecords API method.
      *
+     * WARNING : When setting wfTrigger to true, this method will use an API call per bean
+     * passed in argument. This is caused by Zoho limitation which forbids triggering any
+     * workflow when inserting several beans simultaneously.
+     *
      * @param ZohoBeanInterface[] $beans The Zoho Beans to insert in the CRM
      * @param bool $wfTrigger Whether or not the call should trigger the workflows related to a "created" event
      * @param int $duplicateCheck 1 : Throwing error when a duplicate is found; 2 : Merging with existing duplicate
@@ -363,11 +367,21 @@ abstract class AbstractZohoDao
     {
         $records = [];
 
-        // We can't pass more than 100 records to Zoho, so we split the request into pieces of 100
-        foreach(array_chunk($beans, 100) AS $beanPool) {
-            $xmlData = $this->toXml($beanPool);
-            $response = $this->zohoClient->insertRecords($this->getModule(), $xmlData, $wfTrigger, $duplicateCheck, $isApproval);
-            $records = array_merge($records, $response->getRecords());
+        if($wfTrigger) {
+            // If we trigger workflows, we trigger the insert of beans one by one.
+            foreach($beans AS $bean) {
+                $xmlData = $this->toXml([$bean]);
+                $response = $this->zohoClient->insertRecords($this->getModule(), $xmlData, $wfTrigger, $duplicateCheck, $isApproval, 2);
+                $records = array_merge($records, $response->getRecords());
+            }
+        }
+        else {
+            // We can't pass more than 100 records to Zoho, so we split the request into pieces of 100
+            foreach(array_chunk($beans, 100) AS $beanPool) {
+                $xmlData = $this->toXml($beanPool);
+                $response = $this->zohoClient->insertRecords($this->getModule(), $xmlData, $wfTrigger, $duplicateCheck, $isApproval);
+                $records = array_merge($records, $response->getRecords());
+            }
         }
         if (count($records) != count($beans)) {
             throw new ZohoCRMException("Error while inserting beans in Zoho. ".count($beans)." passed in parameter, but ".count($records)." returned.");
@@ -376,7 +390,11 @@ abstract class AbstractZohoDao
         foreach ($beans as $key=>$bean) {
             $record = $records[$key];
 
-            if (substr($record['code'], 0, 1) != "2") {
+            if ($wfTrigger && (!isset($record['Id']) || empty($record['Id']))) {
+                // This field is probably in error!
+                throw new ZohoCRMException('An error occurred while inserting records and triggering workflow: '.$record['message'], $record['code']);
+            }
+            elseif (!$wfTrigger && substr($record['code'], 0, 1) != "2") {
                 // This field is probably in error!
                 throw new ZohoCRMException('An error occurred while inserting records: '.$record['message'], $record['code']);
             }
@@ -402,13 +420,22 @@ abstract class AbstractZohoDao
 
         $records = [];
 
-        // We can't pass more than 100 records to Zoho, so we split the request into pieces of 100
-        foreach(array_chunk($beans, 100) AS $beanPool) {
-            $xmlData = $this->toXml($beanPool);
 
-            $response = $this->zohoClient->updateRecords($this->getModule(), $xmlData, null, $wfTrigger);
-
-            $records = array_merge($records, $response->getRecords());
+        if($wfTrigger) {
+            // If we trigger workflows, we trigger the insert of beans one by one.
+            foreach($beans AS $bean) {
+                $xmlData = $this->toXml([$bean]);
+                $response = $this->zohoClient->updateRecords($this->getModule(), $xmlData, $bean->getZohoId(), $wfTrigger, 2);
+                $records = array_merge($records, $response->getRecords());
+            }
+        }
+        else {
+            // We can't pass more than 100 records to Zoho, so we split the request into pieces of 100
+            foreach(array_chunk($beans, 100) AS $beanPool) {
+                $xmlData = $this->toXml($beanPool);
+                $response = $this->zohoClient->updateRecords($this->getModule(), $xmlData, null, $wfTrigger);
+                $records = array_merge($records, $response->getRecords());
+            }
         }
         if (count($records) != count($beans)) {
             throw new ZohoCRMException("Error while inserting beans in Zoho. ".count($beans)." passed in parameter, but ".count($records)." returned.");
@@ -419,7 +446,11 @@ abstract class AbstractZohoDao
         foreach ($beans as $key=>$bean) {
             $record = $records[$key];
 
-            if (substr($record['code'], 0, 1) != "2") {
+            if ($wfTrigger && (!isset($record['Id']) || empty($record['Id']))) {
+                // This field is probably in error!
+                throw new ZohoCRMException('An error occurred while updating records and triggering workflow: '.$record['message'], $record['code']);
+            }
+            elseif (!$wfTrigger && substr($record['code'], 0, 1) != "2") {
                 // This field is probably in error!
                 $exceptions->attach($bean, new ZohoCRMException('An error occurred while updating records. '.(isset($record['message'])?$record['message']:""), $record['code']));
                 continue;
@@ -437,64 +468,6 @@ abstract class AbstractZohoDao
         }
         if ($exceptions->count() != 0) {
             throw new ZohoCRMUpdateException($exceptions);
-        }
-    }
-
-    /**
-     * Triggers workflows while inserting a single record.
-     *
-     * @param ZohoBeanInterface $bean The bean representing the affected record.
-     * @throws ZohoCRMException
-     */
-    public function insertAndTriggerWorkflow(ZohoBeanInterface $bean)
-    {
-        $xmlData = $this->toXml([$bean]);
-
-        $response = $this->zohoClient->insertRecords($this->getModule(), $xmlData, "true", 2);
-
-
-        if ($response->getCode() && substr($response->getCode(), 0, 1) != "2") {
-            // This field is probably in error!
-            throw new ZohoCRMException('An error occurred while inserting records. '.($response->getMessage())?$response->getMessage():"", $response->getCode());
-        }
-        if ($response->getRecordId() != $bean->getZohoId()) {
-            // This field is probably in error!
-            throw new ZohoCRMException('An error occurred while inserting records. The Zoho ID to update was '.$bean->getZohoId().', returned '.$response->getRecordId());
-        }
-
-        $record = array_shift($response->getRecords());
-
-        if ($record['Modified Time']) {
-            $bean->setModifiedTime(\DateTime::createFromFormat('Y-m-d H:i:s', $record['Modified Time']));
-        }
-    }
-
-    /**
-     * Triggers workflows while updating a single record.
-     *
-     * @param ZohoBeanInterface $bean The bean representing the affected record.
-     * @throws ZohoCRMException
-     */
-    public function updateAndTriggerWorkflow(ZohoBeanInterface $bean)
-    {
-        $xmlData = $this->toXml([$bean]);
-
-        $response = $this->zohoClient->updateRecords($this->getModule(), $xmlData, $bean->getZohoId(), "true", 2);
-
-
-        if ($response->getCode() && substr($response->getCode(), 0, 1) != "2") {
-            // This field is probably in error!
-            throw new ZohoCRMException('An error occurred while updating records. '.($response->getMessage())?$response->getMessage():"", $response->getCode());
-        }
-        if ($response->getRecordId() != $bean->getZohoId()) {
-            // This field is probably in error!
-            throw new ZohoCRMException('An error occurred while updating records. The Zoho ID to update was '.$bean->getZohoId().', returned '.$response->getRecordId());
-        }
-
-        $record = array_shift($response->getRecords());
-
-        if ($record['Modified Time']) {
-            $bean->setModifiedTime(\DateTime::createFromFormat('Y-m-d H:i:s', $record['Modified Time']));
         }
     }
 
