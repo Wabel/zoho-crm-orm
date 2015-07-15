@@ -199,7 +199,7 @@ abstract class AbstractZohoDao
     public function getById($id)
     {
         try {
-""            $module = $this->getModule();
+            $module = $this->getModule();
             $beans = [];
 
             // If there's several IDs to process, we divide them by pools of 100 and implode them before requesting
