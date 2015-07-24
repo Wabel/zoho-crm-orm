@@ -213,7 +213,8 @@ abstract class AbstractZohoDao
             // if not, we simply request our record
             else {
                 $response = $this->zohoClient->getRecordById($module, $id);
-                $beans = $this->getBeansFromResponse($response)[0];
+                $beans = $this->getBeansFromResponse($response);
+                $beans = array_shift($beans);
             }
 
             return $beans;
