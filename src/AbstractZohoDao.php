@@ -372,7 +372,7 @@ abstract class AbstractZohoDao
             // If we trigger workflows, we trigger the insert of beans one by one.
             foreach($beans AS $bean) {
                 $xmlData = $this->toXml([$bean]);
-                $response = $this->zohoClient->insertRecords($this->getModule(), $xmlData, $wfTrigger, $duplicateCheck, $isApproval, 2);
+                $response = $this->zohoClient->insertRecords($this->getModule(), $xmlData, $wfTrigger, $duplicateCheck, $isApproval);
                 $records = array_merge($records, $response->getRecords());
             }
         }
@@ -426,7 +426,7 @@ abstract class AbstractZohoDao
             // If we trigger workflows, we trigger the insert of beans one by one.
             foreach($beans AS $bean) {
                 $xmlData = $this->toXml([$bean]);
-                $response = $this->zohoClient->updateRecords($this->getModule(), $xmlData, $bean->getZohoId(), $wfTrigger, 2);
+                $response = $this->zohoClient->updateRecords($this->getModule(), $xmlData, $bean->getZohoId(), $wfTrigger);
                 $records = array_merge($records, $response->getRecords());
             }
         }
