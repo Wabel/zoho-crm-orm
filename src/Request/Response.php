@@ -55,6 +55,11 @@ class Response
    */
   protected $recordId;
 
+    /**
+     * @var string[]
+     */
+  protected $deletedIds;
+
   /**
    * URL used for the request
    *
@@ -145,6 +150,14 @@ class Response
     );
     }
 
+    /**
+     * @return \string[]
+     */
+    public function getDeletedIds()
+    {
+        return $this->deletedIds;
+    }
+
     protected function parseResponse()
     {
         if ($this->method == "downloadFile") {
@@ -185,8 +198,12 @@ class Response
           $this->parseResponseGetModules($xml);
       }
 
+      elseif ($this->method == "getDeletedRecordIds") {
+        $deletedIdsString = (string) $xml->result->DeletedIDs;
+        $this->deletedIds = explode(',', $deletedIdsString);
+
       // getRecords, getRelatedRecords, getSearchRecords, getRecordById, getCVRecords
-      elseif (isset($xml->result->{$this->module})) {
+      } elseif (isset($xml->result->{$this->module})) {
           $this->parseResponseGetRecords($xml);
       }
 
@@ -218,11 +235,7 @@ class Response
       }
 
       // downloadFile
-      elseif ($this->method = "downloadFile") {
-          $this->message = (string) $xml->result->message;
-          $this->code = (string) $xml->result->code;
-          $this->file = $this->xmlstr;
-      } else {
+      else {
           throw new ZohoCRMException("Unknown Zoho CRM response format.");
       }
         }

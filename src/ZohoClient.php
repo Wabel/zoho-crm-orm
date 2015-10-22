@@ -142,7 +142,7 @@ class ZohoClient
      * @return Response The Response object
      * @throws ZohoCRMResponseException
      */
-    public function getRecords($module, $sortColumnString = null, $sortOrderString = null, $lastModifiedTime = null, $selectColumns = null, $fromIndex = null, $toIndex = null)
+    public function getRecords($module, $sortColumnString = null, $sortOrderString = null, \DateTimeInterface $lastModifiedTime = null, $selectColumns = null, $fromIndex = null, $toIndex = null)
     {
         $params['newFormat'] = 1;
         $params['version'] = 1;
@@ -166,6 +166,30 @@ class ZohoClient
         }
 
         return $this->call($module, 'getRecords', $params);
+    }
+
+    /**
+     * Implements getDeletedRecordIds API method.
+
+     * @param string $module
+     * @param \DateTimeInterface $lastModifiedTime
+     * @param int $fromIndex
+     * @param int $toIndex
+     * @return Response
+     * @throws ZohoCRMResponseException
+     */
+    public function getDeletedRecordIds($module, \DateTimeInterface $lastModifiedTime = null, $fromIndex = null, $toIndex = null) {
+        if($fromIndex) {
+            $params['fromIndex'] = $fromIndex;
+        }
+        if($toIndex) {
+            $params['toIndex'] = $toIndex;
+        }
+        if($lastModifiedTime) {
+            $params['lastModifiedTime'] = $lastModifiedTime->format("Y-m-d H:i:s");
+        }
+
+        return $this->call($module, 'getDeletedRecordIds', $params);
     }
 
     /**

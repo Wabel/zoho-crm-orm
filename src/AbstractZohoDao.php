@@ -271,6 +271,46 @@ abstract class AbstractZohoDao
     }
 
     /**
+     * Returns the list of deleted records.
+
+     * @param string $module
+     * @param \DateTimeInterface $lastModifiedTime
+     * @param int $fromIndex
+     * @param int $toIndex
+     * @return Response
+     * @throws ZohoCRMResponseException
+     */
+    public function getDeletedRecordIds(\DateTimeInterface $lastModifiedTime = null, $limit = null) {
+        $globalDeletedIDs = array();
+
+        do {
+            try {
+                $fromIndex = count($globalDeletedIDs)+1;
+                $toIndex = $fromIndex + self::MAX_GET_RECORDS - 1;
+
+                if ($limit) {
+                    $toIndex = min($limit - 1, $toIndex);
+                }
+
+                $response = $this->zohoClient->getDeletedRecordIds($this->getModule(), $lastModifiedTime, $fromIndex, $toIndex);
+                $deletedIDs = $response->getDeletedIds();
+            } catch (ZohoCRMResponseException $e) {
+                // No records found? Let's return an empty array!
+                if ($e->getZohoCode() == 4422) {
+                    $deletedIDs = array();
+                } else {
+                    throw $e;
+                }
+            }
+
+            $globalDeletedIDs = array_merge($globalDeletedIDs, $deletedIDs);
+
+        } while (count($deletedIDs) == self::MAX_GET_RECORDS);
+
+        return $globalDeletedIDs;
+    }
+
+    /**
      * Implements getRecords API method.
      *
      * @param string $id Zoho Id of the record to delete

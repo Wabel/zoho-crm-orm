@@ -45,7 +45,7 @@ class ZohoCRMResponseException extends ZohoCRMException
     public function __construct(Response $zohoResponse)
     {
         $code = $zohoResponse->getCode();
-        $message = "Code $code ".(isset(self::$errorMessages[$code])?"[".self::$errorMessages[$code]."]":"")." ".$zohoResponse->getMessage();
+        $message = "Code {$code} ".(isset(self::$errorMessages[$code])?"[".self::$errorMessages[$code]."]":"")." ".$zohoResponse->getMessage();
 
         parent::__construct($message, $code);
     }

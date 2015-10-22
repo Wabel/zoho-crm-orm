@@ -150,6 +150,8 @@ class ZohoClientTest extends PHPUnit_Framework_TestCase
         //$records = $contactZohoDao->getRecords("Modified Time", "asc", $modifiedTime);
         $records = $contactZohoDao->getRecords(null, null, $modifiedTime);
 
+        $beforeDeleteTime = new DateTimeImmutable();
+
         $this->assertCount(302, $records);
         foreach ($records as $key=>$record) {
             $this->assertInstanceOf("\\TestNamespace\\Contact", $record);
@@ -159,8 +161,15 @@ class ZohoClientTest extends PHPUnit_Framework_TestCase
             $contactZohoDao->delete($record->getZohoId());
         }
 
-        $records = $contactZohoDao->searchRecords("(First Name:TestMultiplePoolUser)");
-        $this->assertCount(0, $records);
+        $records2 = $contactZohoDao->searchRecords("(First Name:TestMultiplePoolUser)");
+        $this->assertCount(0, $records2);
+
+        $deletedRecords = $contactZohoDao->getDeletedRecordIds($beforeDeleteTime->sub(new DateInterval("PT3M")));
+        // Let's check that each deleted record is present in the deleted record list.
+        foreach ($records as $record) {
+            $this->assertContains($record->getZohoId(), $deletedRecords);
+        }
+
     }
 
     /**
@@ -198,8 +207,11 @@ class ZohoClientTest extends PHPUnit_Framework_TestCase
             $failedBeans = $updateException->getFailedBeans();
             $this->assertTrue($failedBeans->offsetExists($contact1));
             $this->assertTrue($failedBeans->offsetExists($contact2));
+            $innerException = $failedBeans->offsetGet($contact1);
+            $this->assertEquals("401.2", $innerException->getZohoCode());
             $this->assertEquals(2, $failedBeans->count());
         }
+
         $this->assertTrue($updateExceptionTriggered);
     }
 
