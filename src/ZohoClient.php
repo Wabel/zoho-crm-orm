@@ -192,6 +192,7 @@ class ZohoClient
      */
     public function getDeletedRecordIds($module, \DateTimeInterface $lastModifiedTime = null, $fromIndex = null, $toIndex = null)
     {
+        $params = [];
         if ($fromIndex) {
             $params['fromIndex'] = $fromIndex;
         }

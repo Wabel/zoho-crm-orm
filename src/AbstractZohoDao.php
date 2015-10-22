@@ -277,16 +277,14 @@ abstract class AbstractZohoDao
 
     /**
      * Returns the list of deleted records.
-
      *
-     * @param string             $module
-     * @param \DateTimeInterface $lastModifiedTime
-     * @param int                $fromIndex
-     * @param int                $toIndex
+     * @param \DateTimeInterface|null $lastModifiedTime
+     * @param int                     $limit
      *
-     * @return Response
+     * @return array
      *
      * @throws ZohoCRMResponseException
+     * @throws \Exception
      */
     public function getDeletedRecordIds(\DateTimeInterface $lastModifiedTime = null, $limit = null)
     {
