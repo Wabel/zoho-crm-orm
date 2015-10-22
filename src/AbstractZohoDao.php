@@ -1,7 +1,7 @@
 <?php
+
 namespace Wabel\Zoho\CRM;
 
-use GuzzleHttp\Client;
 use Wabel\Zoho\CRM\Exception\ZohoCRMException;
 use Wabel\Zoho\CRM\Exception\ZohoCRMResponseException;
 use Wabel\Zoho\CRM\Exception\ZohoCRMUpdateException;
@@ -9,7 +9,6 @@ use Wabel\Zoho\CRM\Request\Response;
 
 /**
  * Base class that provides access to Zoho through Zoho beans.
- *
  */
 abstract class AbstractZohoDao
 {
@@ -20,13 +19,14 @@ abstract class AbstractZohoDao
     const MAX_SIMULTANEOUS_SAVE = 100;
 
     /**
-     * The class implementing API methods not directly related to a specific module
+     * The class implementing API methods not directly related to a specific module.
      *
      * @var ZohoClient
      */
     protected $zohoClient;
 
-    public function __construct(ZohoClient $zohoClient) {
+    public function __construct(ZohoClient $zohoClient)
+    {
         $this->zohoClient = $zohoClient;
     }
 
@@ -41,24 +41,27 @@ abstract class AbstractZohoDao
      *
      * @return array The array of field names for a module
      */
-    protected function getFlatFields() {
+    protected function getFlatFields()
+    {
         if ($this->flatFields === null) {
             $this->flatFields = array();
             foreach ($this->getFields() as $cat) {
                 $this->flatFields = array_merge($this->flatFields, $cat);
             }
         }
+
         return $this->flatFields;
     }
 
     /**
-     * Parse a Zoho Response in order to retrieve one or several ZohoBeans from it
+     * Parse a Zoho Response in order to retrieve one or several ZohoBeans from it.
      *
      * @param Response $zohoResponse The response returned by the ZohoClient->call() method
+     *
      * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
      */
-    protected function getBeansFromResponse(Response $zohoResponse) {
-
+    protected function getBeansFromResponse(Response $zohoResponse)
+    {
         $beanClass = $this->getBeanClassName();
         $fields = $this->getFlatFields();
 
@@ -71,11 +74,11 @@ abstract class AbstractZohoDao
 
             // First, let's fill the ID.
             // The ID is CONTACTID or ACCOUNTID or Id depending on the Zoho type.
-            $idName = strtoupper(rtrim($this->getModule(), "s"));
-            if (isset($record[$idName."ID"])) {
-                $id = $record[$idName."ID"];
-            }elseif (isset($record[$idName."_ID"])) {
-                $id = $record[$idName."_ID"];
+            $idName = strtoupper(rtrim($this->getModule(), 's'));
+            if (isset($record[$idName.'ID'])) {
+                $id = $record[$idName.'ID'];
+            } elseif (isset($record[$idName.'_ID'])) {
+                $id = $record[$idName.'_ID'];
             } else {
                 $id = $record['Id'];
             }
@@ -83,45 +86,44 @@ abstract class AbstractZohoDao
             $bean->setCreatedTime(\DateTime::createFromFormat('Y-m-d H:i:s', $record['Created Time']));
             $bean->setModifiedTime(\DateTime::createFromFormat('Y-m-d H:i:s', $record['Modified Time']));
 
-            foreach ($record as $key=>$value) {
+            foreach ($record as $key => $value) {
                 if (isset($fields[$key])) {
                     $setter = $fields[$key]['setter'];
 
                     switch ($fields[$key]['type']) {
-                        case "Date":
-                            if($dateObj = \DateTime::createFromFormat('M/d/Y', $value)) {
+                        case 'Date':
+                            if ($dateObj = \DateTime::createFromFormat('M/d/Y', $value)) {
                                 $value = $dateObj;
-                            }
-                            elseif($dateObj = \DateTime::createFromFormat('Y-m-d', $value)) {
+                            } elseif ($dateObj = \DateTime::createFromFormat('Y-m-d', $value)) {
                                 $value = $dateObj;
-                            }
-                            else {
-                                throw new ZohoCRMException("Unable to convert the Date field \"".$key."\" into a DateTime PHP object from the the record $id of the module ".$this->getModule().".");
+                            } else {
+                                throw new ZohoCRMException('Unable to convert the Date field "'.$key."\" into a DateTime PHP object from the the record $id of the module ".$this->getModule().'.');
                             }
                             break;
-                        case "DateTime":
+                        case 'DateTime':
                             $value = \DateTime::createFromFormat('Y-m-d H:i:s', $value);
                             break;
-                        case "Boolean":
-                            $value = ($value == "true");
+                        case 'Boolean':
+                            $value = ($value == 'true');
                             break;
                         default:
                             break;
                     }
                     $bean->$setter($value);
-
                 }
             }
 
             $beanArray[] = $bean;
         }
+
         return $beanArray;
     }
 
     /**
-     * Convert an array of ZohoBeans into a SimpleXMLElement
+     * Convert an array of ZohoBeans into a SimpleXMLElement.
      *
      * @param $zohoBeans ZohoBeanInterface[]
+     *
      * @return \SimpleXMLElement The SimpleXMLElement containing the XML for a request
      */
     public function toXml($zohoBeans)
@@ -133,15 +135,15 @@ abstract class AbstractZohoDao
 
         foreach ($zohoBeans as $zohoBean) {
             if (!$zohoBean instanceof ZohoBeanInterface) {
-                throw new ZohoCRMException("Zoho beans sent to save must implement the ZohoBeanInterface.");
+                throw new ZohoCRMException('Zoho beans sent to save must implement the ZohoBeanInterface.');
             }
 
             $properties = $this->getFlatFields();
-            $row = $module->addChild("row");
-            $row->addAttribute("no", $no);
+            $row = $module->addChild('row');
+            $row->addAttribute('no', $no);
 
-            $fl = $row->addChild("FL", $zohoBean->getZohoId());
-            $fl->addAttribute("val", "Id");
+            $fl = $row->addChild('FL', $zohoBean->getZohoId());
+            $fl->addAttribute('val', 'Id');
 
             foreach ($properties as $name => $params) {
                 $getter = $params['getter'];
@@ -151,27 +153,27 @@ abstract class AbstractZohoDao
 
                     // We convert the value back to a proper format if the Zoho Type is Date, DateTime or Boolean
                     switch ($params['type']) {
-                        case "Date":
+                        case 'Date':
                             /** @var \DateTime $value */
                             $value = $value->format('m/d/Y');
                             break;
-                        case "DateTime":
+                        case 'DateTime':
                             /** @var \DateTime $value */
                             $value = $value->format('Y-m-d H:i:s');
                             break;
-                        case "Boolean":
-                            /** @var boolean $value */
-                            $value = $value ? "true" : "false";
+                        case 'Boolean':
+                            /** @var bool $value */
+                            $value = $value ? 'true' : 'false';
                             break;
                         default:
                             break;
                     }
 
-                    $fl = $row->addChild("FL", htmlspecialchars($value));
-                    $fl->addAttribute("val", $name);
+                    $fl = $row->addChild('FL', htmlspecialchars($value));
+                    $fl->addAttribute('val', $name);
                 }
             }
-            $no++;
+            ++$no;
         }
 
         return $module;
@@ -192,8 +194,10 @@ abstract class AbstractZohoDao
     /**
      * Implements getRecordById API method.
      *
-     * @param  string|array $id Zoho Id of the record to retrieve OR an array of IDs
+     * @param string|array $id Zoho Id of the record to retrieve OR an array of IDs
+     *
      * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
+     *
      * @throws ZohoCRMResponseException
      */
     public function getById($id)
@@ -203,9 +207,9 @@ abstract class AbstractZohoDao
             $beans = [];
 
             // If there's several IDs to process, we divide them by pools of 100 and implode them before requesting
-            if(is_array($id)) {
-                foreach(array_chunk($id, self::MAX_GET_RECORDS_BY_ID) AS $pool) {
-                    $idlist = implode(";", $pool);
+            if (is_array($id)) {
+                foreach (array_chunk($id, self::MAX_GET_RECORDS_BY_ID) as $pool) {
+                    $idlist = implode(';', $pool);
                     $response = $this->zohoClient->getRecordById($module, $idlist);
                     $beans = array_merge($beans, $this->getBeansFromResponse($response));
                 }
@@ -236,7 +240,9 @@ abstract class AbstractZohoDao
      * @param \DateTime $lastModifiedTime
      * @param $selectColumns
      * @param $limit
+     *
      * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
+     *
      * @throws ZohoCRMResponseException
      */
     public function getRecords($sortColumnString = null, $sortOrderString = null, \DateTime $lastModifiedTime = null, $selectColumns = null, $limit = null)
@@ -245,7 +251,7 @@ abstract class AbstractZohoDao
 
         do {
             try {
-                $fromIndex = count($globalResponse)+1;
+                $fromIndex = count($globalResponse) + 1;
                 $toIndex = $fromIndex + self::MAX_GET_RECORDS - 1;
 
                 if ($limit) {
@@ -264,7 +270,6 @@ abstract class AbstractZohoDao
             }
 
             $globalResponse = array_merge($globalResponse, $beans);
-
         } while (count($beans) == self::MAX_GET_RECORDS);
 
         return $globalResponse;
@@ -273,19 +278,23 @@ abstract class AbstractZohoDao
     /**
      * Returns the list of deleted records.
 
-     * @param string $module
+     *
+     * @param string             $module
      * @param \DateTimeInterface $lastModifiedTime
-     * @param int $fromIndex
-     * @param int $toIndex
+     * @param int                $fromIndex
+     * @param int                $toIndex
+     *
      * @return Response
+     *
      * @throws ZohoCRMResponseException
      */
-    public function getDeletedRecordIds(\DateTimeInterface $lastModifiedTime = null, $limit = null) {
+    public function getDeletedRecordIds(\DateTimeInterface $lastModifiedTime = null, $limit = null)
+    {
         $globalDeletedIDs = array();
 
         do {
             try {
-                $fromIndex = count($globalDeletedIDs)+1;
+                $fromIndex = count($globalDeletedIDs) + 1;
                 $toIndex = $fromIndex + self::MAX_GET_RECORDS - 1;
 
                 if ($limit) {
@@ -304,7 +313,6 @@ abstract class AbstractZohoDao
             }
 
             $globalDeletedIDs = array_merge($globalDeletedIDs, $deletedIDs);
-
         } while (count($deletedIDs) == self::MAX_GET_RECORDS);
 
         return $globalDeletedIDs;
@@ -313,10 +321,12 @@ abstract class AbstractZohoDao
     /**
      * Implements getRecords API method.
      *
-     * @param string $id Zoho Id of the record to delete
+     * @param string $id           Zoho Id of the record to delete
      * @param string $parentModule The parent module of the records
-     * @param int $limit The max number of records to fetch
+     * @param int    $limit        The max number of records to fetch
+     *
      * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
+     *
      * @throws ZohoCRMResponseException
      */
     public function getRelatedRecords($id, $parentModule, $limit = null)
@@ -325,7 +335,7 @@ abstract class AbstractZohoDao
 
         do {
             try {
-                $fromIndex = count($globalResponse)+1;
+                $fromIndex = count($globalResponse) + 1;
                 $toIndex = $fromIndex + self::MAX_GET_RECORDS - 1;
 
                 if ($limit) {
@@ -344,7 +354,6 @@ abstract class AbstractZohoDao
             }
 
             $globalResponse = array_merge($globalResponse, $beans);
-
         } while (count($beans) == self::MAX_GET_RECORDS);
 
         return $globalResponse;
@@ -353,11 +362,13 @@ abstract class AbstractZohoDao
     /**
      * Implements searchRecords API method.
      *
-     * @param string $searchCondition The search criteria formatted like
-     * @param int $limit The maximum number of beans returned from Zoho
+     * @param string    $searchCondition  The search criteria formatted like
+     * @param int       $limit            The maximum number of beans returned from Zoho
      * @param \DateTime $lastModifiedTime
-     * @param string $selectColumns The list
+     * @param string    $selectColumns    The list
+     *
      * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
+     *
      * @throws ZohoCRMResponseException
      */
     public function searchRecords($searchCondition = null, $limit = null, \DateTime $lastModifiedTime = null, $selectColumns = null)
@@ -366,7 +377,7 @@ abstract class AbstractZohoDao
 
         do {
             try {
-                $fromIndex = count($globalResponse)+1;
+                $fromIndex = count($globalResponse) + 1;
                 $toIndex = $fromIndex + self::MAX_GET_RECORDS - 1;
 
                 if ($limit) {
@@ -385,7 +396,6 @@ abstract class AbstractZohoDao
             }
 
             $globalResponse = array_merge($globalResponse, $beans);
-
         } while (count($beans) == self::MAX_GET_RECORDS);
 
         return $globalResponse;
@@ -398,44 +408,43 @@ abstract class AbstractZohoDao
      * passed in argument. This is caused by Zoho limitation which forbids triggering any
      * workflow when inserting several beans simultaneously.
      *
-     * @param ZohoBeanInterface[] $beans The Zoho Beans to insert in the CRM
-     * @param bool $wfTrigger Whether or not the call should trigger the workflows related to a "created" event
-     * @param int $duplicateCheck 1 : Throwing error when a duplicate is found; 2 : Merging with existing duplicate
-     * @param bool $isApproval Whether or not to push the record into an approval sandbox first
+     * @param ZohoBeanInterface[] $beans          The Zoho Beans to insert in the CRM
+     * @param bool                $wfTrigger      Whether or not the call should trigger the workflows related to a "created" event
+     * @param int                 $duplicateCheck 1 : Throwing error when a duplicate is found; 2 : Merging with existing duplicate
+     * @param bool                $isApproval     Whether or not to push the record into an approval sandbox first
+     *
      * @throws ZohoCRMResponseException
      */
     public function insertRecords($beans, $wfTrigger = null, $duplicateCheck = 2, $isApproval = null)
     {
         $records = [];
 
-        if($wfTrigger) {
+        if ($wfTrigger) {
             // If we trigger workflows, we trigger the insert of beans one by one.
-            foreach($beans AS $bean) {
+            foreach ($beans as $bean) {
                 $xmlData = $this->toXml([$bean]);
                 $response = $this->zohoClient->insertRecords($this->getModule(), $xmlData, $wfTrigger, $duplicateCheck, $isApproval);
                 $records = array_merge($records, $response->getRecords());
             }
-        }
-        else {
+        } else {
             // We can't pass more than 100 records to Zoho, so we split the request into pieces of 100
-            foreach(array_chunk($beans, 100) AS $beanPool) {
+            foreach (array_chunk($beans, 100) as $beanPool) {
                 $xmlData = $this->toXml($beanPool);
                 $response = $this->zohoClient->insertRecords($this->getModule(), $xmlData, $wfTrigger, $duplicateCheck, $isApproval);
                 $records = array_merge($records, $response->getRecords());
             }
         }
         if (count($records) != count($beans)) {
-            throw new ZohoCRMException("Error while inserting beans in Zoho. ".count($beans)." passed in parameter, but ".count($records)." returned.");
+            throw new ZohoCRMException('Error while inserting beans in Zoho. '.count($beans).' passed in parameter, but '.count($records).' returned.');
         }
 
-        foreach ($beans as $key=>$bean) {
+        foreach ($beans as $key => $bean) {
             $record = $records[$key];
 
             if ($wfTrigger && (!isset($record['Id']) || empty($record['Id']))) {
                 // This field is probably in error!
                 throw new ZohoCRMException('An error occurred while inserting records and triggering workflow: '.$record['message'], $record['code']);
-            }
-            elseif (!$wfTrigger && substr($record['code'], 0, 1) != "2") {
+            } elseif (!$wfTrigger && substr($record['code'], 0, 1) != '2') {
                 // This field is probably in error!
                 throw new ZohoCRMException('An error occurred while inserting records: '.$record['message'], $record['code']);
             }
@@ -451,49 +460,47 @@ abstract class AbstractZohoDao
     /**
      * Implements updateRecords API method.
      *
-     * @param array $beans The list of beans to update.
-     * @param bool $wfTrigger Set value as true to trigger the workflow rule in Zoho
+     * @param array $beans     The list of beans to update.
+     * @param bool  $wfTrigger Set value as true to trigger the workflow rule in Zoho
+     *
      * @return Response The Response object
+     *
      * @throws ZohoCRMException
      */
     public function updateRecords(array $beans, $wfTrigger = null)
     {
-
         $records = [];
 
-
-        if($wfTrigger) {
+        if ($wfTrigger) {
             // If we trigger workflows, we trigger the insert of beans one by one.
-            foreach($beans AS $bean) {
+            foreach ($beans as $bean) {
                 $xmlData = $this->toXml([$bean]);
                 $response = $this->zohoClient->updateRecords($this->getModule(), $xmlData, $bean->getZohoId(), $wfTrigger);
                 $records = array_merge($records, $response->getRecords());
             }
-        }
-        else {
+        } else {
             // We can't pass more than 100 records to Zoho, so we split the request into pieces of 100
-            foreach(array_chunk($beans, 100) AS $beanPool) {
+            foreach (array_chunk($beans, 100) as $beanPool) {
                 $xmlData = $this->toXml($beanPool);
                 $response = $this->zohoClient->updateRecords($this->getModule(), $xmlData, null, $wfTrigger);
                 $records = array_merge($records, $response->getRecords());
             }
         }
         if (count($records) != count($beans)) {
-            throw new ZohoCRMException("Error while inserting beans in Zoho. ".count($beans)." passed in parameter, but ".count($records)." returned.");
+            throw new ZohoCRMException('Error while inserting beans in Zoho. '.count($beans).' passed in parameter, but '.count($records).' returned.');
         }
 
         $exceptions = new \SplObjectStorage();
 
-        foreach ($beans as $key=>$bean) {
+        foreach ($beans as $key => $bean) {
             $record = $records[$key];
 
             if ($wfTrigger && (!isset($record['Id']) || empty($record['Id']))) {
                 // This field is probably in error!
                 throw new ZohoCRMException('An error occurred while updating records and triggering workflow: '.$record['message'], $record['code']);
-            }
-            elseif (!$wfTrigger && substr($record['code'], 0, 1) != "2") {
+            } elseif (!$wfTrigger && substr($record['code'], 0, 1) != '2') {
                 // This field is probably in error!
-                $exceptions->attach($bean, new ZohoCRMException('An error occurred while updating records. '.(isset($record['message'])?$record['message']:""), $record['code']));
+                $exceptions->attach($bean, new ZohoCRMException('An error occurred while updating records. '.(isset($record['message']) ? $record['message'] : ''), $record['code']));
                 continue;
             }
 
@@ -515,9 +522,11 @@ abstract class AbstractZohoDao
     /**
      * Implements uploadFile API method.
      *
-     * @param string $id Zoho Id of the record to retrieve
+     * @param string $id      Zoho Id of the record to retrieve
      * @param string $content The string containing the file
+     *
      * @return Response The Response object
+     *
      * @throws ZohoCRMResponseException
      */
     public function uploadFile($id, $content)
@@ -529,6 +538,7 @@ abstract class AbstractZohoDao
      * Implements downloadFile API method.
      *
      * @param string $id unique ID of the attachment
+     *
      * @return Response The Response object
      */
     public function downloadFile($id)
@@ -548,7 +558,7 @@ abstract class AbstractZohoDao
     public function save($beans, $wfTrigger = false, $duplicateCheck = self::ON_DUPLICATE_MERGE, $isApproval = false)
     {
         if (!is_array($beans)) {
-            $beans = [ $beans ];
+            $beans = [$beans];
         }
 
         $toInsert = [];
