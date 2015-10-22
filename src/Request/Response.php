@@ -1,4 +1,6 @@
-<?php namespace Wabel\Zoho\CRM\Request;
+<?php
+
+namespace Wabel\Zoho\CRM\Request;
 
 use Wabel\Zoho\CRM\Exception\ZohoCRMException;
 
@@ -8,68 +10,74 @@ use Wabel\Zoho\CRM\Exception\ZohoCRMException;
  * Parses the ZohoCRM response into an object and
  * normalizes different response formats.
  *
- * @package Zoho\CRM\Request
  * @version 1.0.0
  */
 class Response
 {
-  /**
-   * Code error
+    /**
+   * Code error.
    *
    * @var string
    */
   protected $code;
 
   /**
-   * Message of the error
+   * Message of the error.
    *
    * @var string
    */
   protected $message;
 
   /**
-   * Method used
+   * Method used.
    *
    * @var string
    */
   protected $method;
 
   /**
-   * Module used
+   * Module used.
    *
    * @var string
    */
   protected $module;
 
   /**
-   * Records details affecteds
+   * Records details affecteds.
    *
    * @var array
    */
   protected $records = array();
 
   /**
-   * Specific redord affected
+   * Specific redord affected.
    *
    * @var string
    */
   protected $recordId;
 
   /**
-   * URL used for the request
+   * @var string[]
+   */
+  protected $deletedIds;
+
+  /**
+   * URL used for the request.
    *
    * @var string
    */
   protected $uri;
 
   /**
-   * XML on request
+   * XML on request.
+   *
    * @var string
    */
   protected $xmlstr;
 
   /**
-   * File joined with response
+   * File joined with response.
+   *
    * @var string
    */
   protected $file;
@@ -83,7 +91,7 @@ class Response
     }
 
   /**
-   * Setters & Getters
+   * Setters & Getters.
    */
   public function getModule()
   {
@@ -145,15 +153,23 @@ class Response
     );
     }
 
+    /**
+     * @return \string[]
+     */
+    public function getDeletedIds()
+    {
+        return $this->deletedIds;
+    }
+
     protected function parseResponse()
     {
-        if ($this->method == "downloadFile") {
+        if ($this->method == 'downloadFile') {
             $this->file = $this->xmlstr;
             $this->xmlstr = null;
         } else {
             $xml = simplexml_load_string($this->xmlstr, 'SimpleXMLElement', LIBXML_NOERROR | LIBXML_NOWARNING);
             if ($xml === false) {
-                throw new ZohoCRMException("Zoho CRM response could not be parsed as XML.", 0000);
+                throw new ZohoCRMException('Zoho CRM response could not be parsed as XML.', 0000);
             }
 
             if (isset($xml->error)) {
@@ -183,10 +199,12 @@ class Response
       // getModules
       elseif ($this->method == 'getModules') {
           $this->parseResponseGetModules($xml);
-      }
+      } elseif ($this->method == 'getDeletedRecordIds') {
+          $deletedIdsString = (string) $xml->result->DeletedIDs;
+          $this->deletedIds = explode(',', $deletedIdsString);
 
       // getRecords, getRelatedRecords, getSearchRecords, getRecordById, getCVRecords
-      elseif (isset($xml->result->{$this->module})) {
+      } elseif (isset($xml->result->{$this->module})) {
           $this->parseResponseGetRecords($xml);
       }
 
@@ -218,12 +236,8 @@ class Response
       }
 
       // downloadFile
-      elseif ($this->method = "downloadFile") {
-          $this->message = (string) $xml->result->message;
-          $this->code = (string) $xml->result->code;
-          $this->file = $this->xmlstr;
-      } else {
-          throw new ZohoCRMException("Unknown Zoho CRM response format.");
+      else {
+          throw new ZohoCRMException('Unknown Zoho CRM response format.');
       }
         }
     }
@@ -303,8 +317,8 @@ class Response
 
         if ($this->method == 'getRecordById') {
             $id = strtoupper(substr($this->module, 0, -1)).'ID';
-            if(!isset($this->records[1][$id])) {
-                $id = strtoupper($this->module)."_ID";
+            if (!isset($this->records[1][$id])) {
+                $id = strtoupper($this->module).'_ID';
             }
             $this->recordId = $this->records[1][$id];
         }

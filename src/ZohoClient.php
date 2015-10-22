@@ -1,53 +1,55 @@
-<?php namespace Wabel\Zoho\CRM;
+<?php
+
+namespace Wabel\Zoho\CRM;
 
 use GuzzleHttp\Client;
 use Wabel\Zoho\CRM\Exception\ZohoCRMResponseException;
 use Wabel\Zoho\CRM\Request\Response;
 
 /**
- * Client for provide interface with Zoho CRM
+ * Client for provide interface with Zoho CRM.
  *
  * TODO : Add comments (a lot)
  */
 class ZohoClient
 {
     /**
-     * URL for call request
+     * URL for call request.
      *
      * @var string
      */
     const BASE_URI = 'https://crm.zoho.com/crm/private';
 
     /**
-     * Token used for session of request
+     * Token used for session of request.
      *
      * @var string
      */
     protected $authtoken;
 
     /**
-     * Instance of the client
+     * Instance of the client.
      *
      * @var Client
      */
     protected $zohoRestClient;
 
     /**
-     * Format selected for get request
+     * Format selected for get request.
      *
      * @var string
      */
     protected $format;
 
     /**
-     * Module selected for get request
+     * Module selected for get request.
      *
      * @var string
      */
     protected $module;
 
     /**
-     * Construct
+     * Construct.
      *
      * @param string $authtoken      Token for connection
      * @param Client $zohoRestClient Guzzl Client for connection [optional]
@@ -66,12 +68,14 @@ class ZohoClient
      * @param $leadId
      * @param $data
      * @param array $params
-* @return Response The Response object
+     *
+     * @return Response The Response object
+     *
      * @throws ZohoCRMResponseException
      */
     public function convertLead($leadId, $data, $params = array())
     {
-        $module = "Leads";
+        $module = 'Leads';
         $params['leadId'] = $leadId;
         $params['newFormat'] = 1;
 
@@ -94,15 +98,17 @@ class ZohoClient
      * Implements deleteRecords API method.
      *
      * @param string $module
-     * @param string $id Id of the record
+     * @param string $id     Id of the record
+     *
      * @return Response The Response object
+     *
      * @throws ZohoCRMResponseException
      */
     public function deleteRecords($module, $id)
     {
         $params = array(
             'id' => $id,
-            'newFormat' => 1
+            'newFormat' => 1,
         );
 
         return $this->call($module, 'deleteRecords', $params);
@@ -111,17 +117,18 @@ class ZohoClient
     /**
      * Implements getRecordById API method.
      *
-     * @param  string $module The module to use
-     * @param  string $id Id of the record or a list of IDs separated by a semicolon
+     * @param string $module The module to use
+     * @param string $id     Id of the record or a list of IDs separated by a semicolon
+     *
      * @return Response The Response object
+     *
      * @throws ZohoCRMResponseException
      */
     public function getRecordById($module, $id)
     {
-        if(strpos($id, ";") === false) {
+        if (strpos($id, ';') === false) {
             $params['id'] = $id;
-        }
-        else {
+        } else {
             $params['idlist'] = $id;
         }
         $params['newFormat'] = 1;
@@ -139,33 +146,64 @@ class ZohoClient
      * @param $selectColumns
      * @param $fromIndex
      * @param $toIndex
+     *
      * @return Response The Response object
+     *
      * @throws ZohoCRMResponseException
      */
-    public function getRecords($module, $sortColumnString = null, $sortOrderString = null, $lastModifiedTime = null, $selectColumns = null, $fromIndex = null, $toIndex = null)
+    public function getRecords($module, $sortColumnString = null, $sortOrderString = null, \DateTimeInterface $lastModifiedTime = null, $selectColumns = null, $fromIndex = null, $toIndex = null)
     {
         $params['newFormat'] = 1;
         $params['version'] = 1;
-        if($selectColumns) {
+        if ($selectColumns) {
             $params['selectColumns'] = $selectColumns;
         }
-        if($fromIndex) {
+        if ($fromIndex) {
             $params['fromIndex'] = $fromIndex;
         }
-        if($toIndex) {
+        if ($toIndex) {
             $params['toIndex'] = $toIndex;
         }
-        if($sortColumnString) {
+        if ($sortColumnString) {
             $params['sortColumnString'] = $sortColumnString;
         }
-        if($sortOrderString) {
+        if ($sortOrderString) {
             $params['sortOrderString'] = $sortOrderString;
         }
-        if($lastModifiedTime) {
-            $params['lastModifiedTime'] = $lastModifiedTime->format("Y-m-d H:i:s");
+        if ($lastModifiedTime) {
+            $params['lastModifiedTime'] = $lastModifiedTime->format('Y-m-d H:i:s');
         }
 
         return $this->call($module, 'getRecords', $params);
+    }
+
+    /**
+     * Implements getDeletedRecordIds API method.
+
+     *
+     * @param string             $module
+     * @param \DateTimeInterface $lastModifiedTime
+     * @param int                $fromIndex
+     * @param int                $toIndex
+     *
+     * @return Response
+     *
+     * @throws ZohoCRMResponseException
+     */
+    public function getDeletedRecordIds($module, \DateTimeInterface $lastModifiedTime = null, $fromIndex = null, $toIndex = null)
+    {
+        $params = [];
+        if ($fromIndex) {
+            $params['fromIndex'] = $fromIndex;
+        }
+        if ($toIndex) {
+            $params['toIndex'] = $toIndex;
+        }
+        if ($lastModifiedTime) {
+            $params['lastModifiedTime'] = $lastModifiedTime->format('Y-m-d H:i:s');
+        }
+
+        return $this->call($module, 'getDeletedRecordIds', $params);
     }
 
     /**
@@ -176,18 +214,20 @@ class ZohoClient
      * @param $parentModule
      * @param null $fromIndex
      * @param null $toIndex
+     *
      * @return Response
+     *
      * @throws ZohoCRMResponseException
      */
     public function getRelatedRecords($module, $id, $parentModule, $fromIndex = null, $toIndex = null)
     {
-        $params["id"] = $id;
-        $params["parentModule"] = $parentModule;
+        $params['id'] = $id;
+        $params['parentModule'] = $parentModule;
         $params['newFormat'] = 1;
-        if($fromIndex) {
+        if ($fromIndex) {
             $params['fromIndex'] = $fromIndex;
         }
-        if($toIndex) {
+        if ($toIndex) {
             $params['toIndex'] = $toIndex;
         }
 
@@ -197,13 +237,15 @@ class ZohoClient
     /**
      * Implements searchRecords API method.
      *
-     * @param string $module
-     * @param string $searchCondition
-     * @param int $fromIndex
-     * @param int $toIndex
+     * @param string    $module
+     * @param string    $searchCondition
+     * @param int       $fromIndex
+     * @param int       $toIndex
      * @param \DateTime $lastModifiedTime
-     * @param null $selectColumns
+     * @param null      $selectColumns
+     *
      * @return Response
+     *
      * @throws ZohoCRMResponseException
      */
     public function searchRecords($module, $searchCondition = null, $fromIndex = null, $toIndex = null, $lastModifiedTime = null, $selectColumns = null)
@@ -211,7 +253,7 @@ class ZohoClient
         if ($searchCondition) {
             $params['criteria'] = $searchCondition;
         } else {
-            $params['criteria'] = "()";
+            $params['criteria'] = '()';
         }
         if ($fromIndex) {
             $params['fromIndex'] = $fromIndex;
@@ -235,12 +277,14 @@ class ZohoClient
      * Implements getUsers API method.
      *
      * @param string $type The type of users you want retrieve (among AllUsers, ActiveUsers, DeactiveUsers, AdminUsers and ActiveConfirmedAdmins)
+     *
      * @return Response The array of Zoho Beans parsed from the response
+     *
      * @throws ZohoCRMResponseException
      */
     public function getUsers($type = 'AllUsers')
     {
-        switch($type) {
+        switch ($type) {
             case 'AllUsers':
             case 'ActiveUsers':
             case 'DeactiveUsers':
@@ -263,26 +307,28 @@ class ZohoClient
      * @param $module
      * @param \SimpleXMLElement$xmlData
      * @param bool $wfTrigger
-     * @param int $duplicateCheck
+     * @param int  $duplicateCheck
      * @param bool $isApproval
+     *
      * @return Response
+     *
      * @throws ZohoCRMResponseException
      */
     public function insertRecords($module, $xmlData, $wfTrigger = null, $duplicateCheck = null, $isApproval = null, $version = 4, $newFormat = 2)
     {
-        if($wfTrigger) {
-            $params['wfTrigger'] = "true";
+        if ($wfTrigger) {
+            $params['wfTrigger'] = 'true';
         }
-        if($duplicateCheck) {
+        if ($duplicateCheck) {
             $params['duplicateCheck'] = $duplicateCheck;
         }
-        if($isApproval) {
-            $params['isApproval'] = "true";
+        if ($isApproval) {
+            $params['isApproval'] = 'true';
         }
         $params['newFormat'] = $newFormat;
         $params['version'] = $version;
 
-        return $this->call($module, 'insertRecords', $params, ["xmlData" => $xmlData->asXML()]);
+        return $this->call($module, 'insertRecords', $params, ['xmlData' => $xmlData->asXML()]);
     }
 
     /**
@@ -290,24 +336,25 @@ class ZohoClient
      *
      * @param $module
      * @param \SimpleXMLElement $xmlData
-     * @param string $id
-     * @param bool $wfTrigger
+     * @param string            $id
+     * @param bool              $wfTrigger
+     *
      * @return Response
+     *
      * @throws ZohoCRMResponseException
      */
     public function updateRecords($module, $xmlData, $id = null, $wfTrigger = null, $version = 4, $newFormat = 2)
     {
-
         $params['newFormat'] = $newFormat;
         $params['version'] = $version;
-        if($wfTrigger) {
-            $params['wfTrigger'] = "true";
+        if ($wfTrigger) {
+            $params['wfTrigger'] = 'true';
         }
-        if($id) {
+        if ($id) {
             $params['id'] = $id;
         }
 
-        return $this->call($module, 'updateRecords', $params, ["xmlData" => $xmlData->asXML()]);
+        return $this->call($module, 'updateRecords', $params, ['xmlData' => $xmlData->asXML()]);
     }
 
     /**
@@ -316,7 +363,9 @@ class ZohoClient
      * @param $module
      * @param $id
      * @param $content
+     *
      * @return Response
+     *
      * @throws ZohoCRMResponseException
      */
     public function uploadFile($module, $id, $content)
@@ -332,7 +381,9 @@ class ZohoClient
      *
      * @param $module
      * @param $id
+     *
      * @return Response
+     *
      * @throws ZohoCRMResponseException
      */
     public function downloadFile($module, $id)
@@ -343,7 +394,7 @@ class ZohoClient
     }
 
     /**
-     * Returns a list of modules from Zoho
+     * Returns a list of modules from Zoho.
      */
     public function getModules()
     {
@@ -351,27 +402,26 @@ class ZohoClient
     }
 
     /**
-     * Make the call using the client
+     * Make the call using the client.
      *
-     * @param  string   $module  The module to use
-     * @param  string   $command Command to call
-     * @param  array    $params  Options
-     * @param  \SimpleXMLElement|string    $data    Data to send [optional]
-     * @param  array    $options Options to add for configurations [optional]
+     * @param string                   $module  The module to use
+     * @param string                   $command Command to call
+     * @param array                    $params  Options
+     * @param \SimpleXMLElement|string $data    Data to send [optional]
+     * @param array                    $options Options to add for configurations [optional]
+     *
      * @return Response
      */
     public function call($module, $command, $getParams = array(), $postParams = array())
     {
-
-
         $getParams['authtoken'] = $this->authtoken;
         $getParams['scope'] = 'crmapi';
 
         $uri = $this->getRequestURI($module, $command);
         //$content = $this->getRequestContent($params, $data, $options);
 
-        $request = $this->zohoRestClient->createRequest("POST", $uri);
-        foreach ($postParams as $key=>$value) {
+        $request = $this->zohoRestClient->createRequest('POST', $uri);
+        foreach ($postParams as $key => $value) {
             $request->getBody()->setField($key, $value);
         }
 
@@ -382,7 +432,7 @@ class ZohoClient
 
         $response = $this->zohoRestClient->send($request);
 
-        $zohoResponse =  new Response($response->getBody()->__toString(), $module, $command);
+        $zohoResponse = new Response($response->getBody()->__toString(), $module, $command);
 
         if ($zohoResponse->ifSuccess()) {
             return $zohoResponse;
@@ -392,10 +442,11 @@ class ZohoClient
     }
 
     /**
-     * Get the current request uri
+     * Get the current request uri.
      *
      * @param  $module The module to use
-     * @param  string $command Command for get uri
+     * @param string $command Command for get uri
+     *
      * @return string
      */
     protected function getRequestURI($module, $command)
@@ -407,5 +458,4 @@ class ZohoClient
 
         return implode('/', $parts);
     }
-
 }
