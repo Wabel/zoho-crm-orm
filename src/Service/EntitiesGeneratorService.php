@@ -166,6 +166,13 @@ class EntitiesGeneratorService
         self::registerProperty($class, 'createdTime', "The time the record was created in Zoho\nType: DateTime\n", '\\DateTime');
         self::registerProperty($class, 'modifiedTime', "The last time the record was modified in Zoho\nType: DateTime\n", '\\DateTime');
 
+        $method = PhpMethod::create('isDirty');
+        $method->setDescription('Returns whether a property is changed or not.');
+        $method->addParameter(PhpParameter::create('name'));
+        $method->setBody("\$propertyName = 'dirty'.ucfirst(\$name);\nreturn \$this->\$propertyName;");
+        $method->setType('bool');
+        $class->setMethod($method);
+
         $generator = new CodeFileGenerator();
         $code = $generator->generate($class);
 
@@ -209,6 +216,7 @@ class EntitiesGeneratorService
                 $fields[$key][$name]['phpType'] = $phpType;
                 $fields[$key][$name]['getter'] = 'get'.ucfirst(self::camelCase($name));
                 $fields[$key][$name]['setter'] = 'set'.ucfirst(self::camelCase($name));
+                $fields[$key][$name]['name'] = self::camelCase($name);
 
                 if ($type === 'Lookup') {
                     $generateId = false;
@@ -240,6 +248,7 @@ class EntitiesGeneratorService
                         $fields[$key][$name]['phpType'] = $phpType;
                         $fields[$key][$name]['getter'] = 'get'.ucfirst(self::camelCase($name));
                         $fields[$key][$name]['setter'] = 'set'.ucfirst(self::camelCase($name));
+                        $fields[$key][$name]['name'] = self::camelCase($name);
                     }
                 }
             }
@@ -290,6 +299,17 @@ class EntitiesGeneratorService
             $class->setProperty($property);
         }
 
+        $isDirtyName = 'dirty'.ucfirst($name);
+        if (!$class->hasProperty($isDirtyName)) {
+            $dirtyProperty = PhpProperty::create($isDirtyName);
+            $dirtyProperty->setDescription("Whether '$name' has been changed or not.");
+            $dirtyProperty->setType('bool');
+            $dirtyProperty->setVisibility('protected');
+            $dirtyProperty->setDefaultValue(false);
+
+            $class->setProperty($dirtyProperty);
+        }
+
         $getterName = 'get'.ucfirst($name);
         $getterDescription = 'Get '.lcfirst($description);
         $setterName = 'set'.ucfirst($name);
@@ -307,6 +327,7 @@ class EntitiesGeneratorService
             $method->setDescription($setterDescription);
             $method->addParameter(PhpParameter::create($name)->setType($type));
             $method->setBody("\$this->{$name} = \${$name};\n".
+                             "\$this->dirty".ucfirst($name)." = true;\n".
                              "return \$this;");
             $class->setMethod($method);
         }

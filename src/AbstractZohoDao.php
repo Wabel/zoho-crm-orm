@@ -146,6 +146,12 @@ abstract class AbstractZohoDao
             $fl->addAttribute('val', 'Id');
 
             foreach ($properties as $name => $params) {
+                $camelCaseName = $params['name'];
+                $isDirty = $zohoBean->isDirty($camelCaseName);
+                if (!$isDirty) {
+                    continue;
+                }
+
                 $getter = $params['getter'];
                 $value = $zohoBean->$getter();
 
