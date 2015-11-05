@@ -49,6 +49,7 @@ interface ZohoBeanInterface
      * Returns whether a property is changed or not.
      *
      * @param mixed $name
+     *
      * @return bool
      */
     public function isDirty($name);

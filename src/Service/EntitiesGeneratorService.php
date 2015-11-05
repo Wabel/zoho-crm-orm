@@ -170,7 +170,7 @@ class EntitiesGeneratorService
         $method->setDescription('Returns whether a property is changed or not.');
         $method->addParameter(PhpParameter::create('name'));
         $method->setBody("\$propertyName = 'dirty'.ucfirst(\$name);\nreturn \$this->\$propertyName;");
-        $method->setType("bool");
+        $method->setType('bool');
         $class->setMethod($method);
 
         $generator = new CodeFileGenerator();
@@ -299,7 +299,7 @@ class EntitiesGeneratorService
             $class->setProperty($property);
         }
 
-        $isDirtyName = "dirty".ucfirst($name);
+        $isDirtyName = 'dirty'.ucfirst($name);
         if (!$class->hasProperty($isDirtyName)) {
             $dirtyProperty = PhpProperty::create($isDirtyName);
             $dirtyProperty->setDescription("Whether '$name' has been changed or not.");
