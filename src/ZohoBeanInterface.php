@@ -44,4 +44,12 @@ interface ZohoBeanInterface
      * @param \DateTime $time
      */
     public function setModifiedTime(\DateTime $time);
+
+    /**
+     * Returns whether a property is changed or not.
+     *
+     * @param mixed $name
+     * @return bool
+     */
+    public function isDirty($name);
 }
