@@ -174,10 +174,10 @@ abstract class AbstractZohoDao
                         default:
                             break;
                     }
-
-                    $fl = $row->addChild('FL', htmlspecialchars($value));
-                    $fl->addAttribute('val', $name);
                 }
+
+                $fl = $row->addChild('FL', htmlspecialchars($value));
+                $fl->addAttribute('val', $name);
             }
             ++$no;
         }
