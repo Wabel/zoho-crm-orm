@@ -83,6 +83,8 @@ class EntitiesGeneratorService
         // Let's add the ZohoID property
         self::registerProperty($class, 'zohoId', "The ID of this record in Zoho\nType: string\n", 'string');
 
+        $usedIdentifiers = [];
+
         foreach ($fields as &$fieldCategory) {
             foreach ($fieldCategory as $name => &$field) {
                 $req = $field['req'];
@@ -111,7 +113,10 @@ class EntitiesGeneratorService
 
                 $field['phpType'] = $phpType;
 
-                self::registerProperty($class, self::camelCase($name), 'Zoho field '.$name."\n".
+                $identifier = $this->getUniqueIdentifier($name, $usedIdentifiers);
+                $usedIdentifiers[$identifier] = true;
+
+                self::registerProperty($class, $identifier, 'Zoho field '.$name."\n".
                     'Type: '.$type."\n".
                     'Read only: '.($isreadonly ? 'true' : 'false')."\n".
                     'Max length: '.$maxlength."\n".
