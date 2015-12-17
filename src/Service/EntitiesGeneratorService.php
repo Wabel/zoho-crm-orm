@@ -181,6 +181,25 @@ class EntitiesGeneratorService
         }
     }
 
+    /**
+     * Returns a unique identifier from the name.
+     *
+     * @param $name
+     * @param array $usedNames
+     */
+    private function getUniqueIdentifier($name, array $usedIdentifiers) {
+        $id = self::camelCase($name);
+        if (isset($usedIdentifiers[$id])) {
+            $counter = 2;
+            while (isset($usedIdentifiers[$id.'_'.$counter])) {
+                $counter++;
+            }
+            return $id.'_'.$counter;
+        } else {
+            return $id;
+        }
+    }
+
     public function generateDao($fields, $namespace, $className, $daoClassName, $moduleName, $targetDirectory)
     {
         //        if (class_exists($namespace."\\".$className)) {
@@ -192,6 +211,8 @@ class EntitiesGeneratorService
         $class->setName($daoClassName)
             ->setNamespace($namespace)
             ->setParentClassName('\\Wabel\\Zoho\\CRM\\AbstractZohoDao');
+
+        $usedIdentifiers = [];
 
         foreach ($fields as $key => $fieldCategory) {
             foreach ($fieldCategory as $name => $field) {
@@ -214,9 +235,11 @@ class EntitiesGeneratorService
                 }
 
                 $fields[$key][$name]['phpType'] = $phpType;
-                $fields[$key][$name]['getter'] = 'get'.ucfirst(self::camelCase($name));
-                $fields[$key][$name]['setter'] = 'set'.ucfirst(self::camelCase($name));
-                $fields[$key][$name]['name'] = self::camelCase($name);
+                $identifier = $this->getUniqueIdentifier($name, $usedIdentifiers);
+                $usedIdentifiers[$identifier] = true;
+                $fields[$key][$name]['getter'] = 'get'.ucfirst($identifier);
+                $fields[$key][$name]['setter'] = 'set'.ucfirst($identifier);
+                $fields[$key][$name]['name'] = $identifier;
 
                 if ($type === 'Lookup') {
                     $generateId = false;
