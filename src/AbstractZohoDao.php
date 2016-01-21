@@ -31,6 +31,8 @@ abstract class AbstractZohoDao
     }
 
     abstract protected function getModule();
+    abstract protected function getSingularModuleName();
+    abstract protected function getPluralModuleName();
     abstract protected function getBeanClassName();
     abstract protected function getFields();
 

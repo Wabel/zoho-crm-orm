@@ -63,7 +63,7 @@ class EntitiesGeneratorService
         $fieldRecords = $fields->getRecords();
 
         $this->generateBean($fieldRecords, $namespace, $className, $moduleName, $targetDirectory);
-        $this->generateDao($fieldRecords, $namespace, $className, $daoClassName, $moduleName, $targetDirectory);
+        $this->generateDao($fieldRecords, $namespace, $className, $daoClassName, $moduleName, $targetDirectory, $moduleSingular, $modulePlural);
     }
 
     public function generateBean($fields, $namespace, $className, $moduleName, $targetDirectory)
@@ -205,7 +205,7 @@ class EntitiesGeneratorService
         }
     }
 
-    public function generateDao($fields, $namespace, $className, $daoClassName, $moduleName, $targetDirectory)
+    public function generateDao($fields, $namespace, $className, $daoClassName, $moduleName, $targetDirectory, $moduleSingular, $modulePlural)
     {
         //        if (class_exists($namespace."\\".$className)) {
 //            $class = PhpClass::fromReflection(new \ReflectionClass($namespace."\\".$daoClassName));
@@ -283,6 +283,10 @@ class EntitiesGeneratorService
         }
 
         $class->setMethod(PhpMethod::create('getModule')->setBody('return '.var_export($moduleName, true).';'));
+
+        $class->setMethod(PhpMethod::create('getSingularModuleName')->setBody('return '.var_export($moduleSingular, true).';'));
+
+        $class->setMethod(PhpMethod::create('getPluralModuleName')->setBody('return '.var_export($modulePlural, true).';'));
 
         $class->setMethod(PhpMethod::create('getFields')->setBody('return '.var_export($fields, true).';'));
 
