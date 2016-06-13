@@ -34,9 +34,10 @@ class EntitiesGeneratorService
     public function generateAll($targetDirectory, $namespace)
     {
         $modules = $this->zohoClient->getModules();
+        $zohoModules = [];
         foreach ($modules->getRecords() as $module) {
             try {
-                $this->generateModule($module['key'], $module['pl'], $module['sl'], $targetDirectory, $namespace);
+                $zohoModules[] = $this->generateModule($module['key'], $module['pl'], $module['sl'], $targetDirectory, $namespace);
             } catch (ZohoCRMException $e) {
                 $this->logger->notice('Error thrown when retrieving fields for module {module}. Error message: {error}.',
                     [
@@ -46,6 +47,7 @@ class EntitiesGeneratorService
                     ]);
             }
         }
+        return $zohoModules;
     }
 
     public function generateModule($moduleName, $modulePlural, $moduleSingular, $targetDirectory, $namespace)
@@ -64,6 +66,8 @@ class EntitiesGeneratorService
 
         $this->generateBean($fieldRecords, $namespace, $className, $moduleName, $targetDirectory);
         $this->generateDao($fieldRecords, $namespace, $className, $daoClassName, $moduleName, $targetDirectory, $moduleSingular, $modulePlural);
+
+        return ['daoClassName' => $daoClassName, 'fullDaoClassName'=>$namespace.'\\'.$daoClassName];
     }
 
     public function generateBean($fields, $namespace, $className, $moduleName, $targetDirectory)
@@ -364,4 +368,10 @@ class EntitiesGeneratorService
             $class->setMethod($method);
         }
     }
+
+    public function getZohoClient()
+    {
+        return $this->zohoClient;
+    }
+    
 }
