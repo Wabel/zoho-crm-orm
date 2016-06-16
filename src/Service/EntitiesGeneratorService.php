@@ -30,7 +30,7 @@ class EntitiesGeneratorService
      *
      * @param string $targetDirectory
      * @param string $namespace
-     * @return array Array about each fully qualified dao namespace
+     * @return array Array containing each fully qualified dao class name
      */
     public function generateAll($targetDirectory, $namespace)
     {
@@ -58,7 +58,7 @@ class EntitiesGeneratorService
      * @param string $moduleSingular
      * @param string $targetDirectory
      * @param string $namespace
-     * @return string The fully qualified Dao namespace
+     * @return string The fully qualified Dao class name
      */
     public function generateModule($moduleName, $modulePlural, $moduleSingular, $targetDirectory, $namespace)
     {
