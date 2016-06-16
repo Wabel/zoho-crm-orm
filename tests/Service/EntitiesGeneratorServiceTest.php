@@ -17,7 +17,8 @@ class EntitiesGeneratorServiceTest extends \PHPUnit_Framework_TestCase
     public function testGenerateAll()
     {
         $generator = $this->getEntitiesGeneratorService();
-        $generator->generateAll(__DIR__.'/../generated/', 'TestNamespace');
+        $zohoModulesDaos = $generator->generateAll(__DIR__.'/../generated/', 'TestNamespace');
+        $this->assertContains('\\TestNamespace\\LeadZohoDao', $zohoModulesDaos);
     }
 
     public function testGenerateModule()
@@ -31,8 +32,9 @@ class EntitiesGeneratorServiceTest extends \PHPUnit_Framework_TestCase
         require __DIR__.'/../generated/Lead.php';
 
         // Second iteration: from existing class!
-        $generator->generateModule('Leads', 'Leads', 'Lead', __DIR__.'/../generated/', 'TestNamespace');
+        $daoFullyQualified = $generator->generateModule('Leads', 'Leads', 'Lead', __DIR__.'/../generated/', 'TestNamespace');
 
         $this->assertFileExists(__DIR__.'/../generated/Lead.php');
+        $this->assertEquals('\\TestNamespace\\LeadZohoDao', $daoFullyQualified);
     }
 }

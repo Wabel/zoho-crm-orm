@@ -30,6 +30,7 @@ class EntitiesGeneratorService
      *
      * @param string $targetDirectory
      * @param string $namespace
+     * @return array Array about each fully qualified dao namespace
      */
     public function generateAll($targetDirectory, $namespace)
     {
@@ -50,6 +51,15 @@ class EntitiesGeneratorService
         return $zohoModules;
     }
 
+    /**
+     * Generate a dao for a zoho module
+     * @param string $moduleName
+     * @param string $modulePlural
+     * @param string $moduleSingular
+     * @param string $targetDirectory
+     * @param string $namespace
+     * @return string The fully qualified Dao namespace
+     */
     public function generateModule($moduleName, $modulePlural, $moduleSingular, $targetDirectory, $namespace)
     {
         $fields = $this->zohoClient->getFields($moduleName);
@@ -67,7 +77,7 @@ class EntitiesGeneratorService
         $this->generateBean($fieldRecords, $namespace, $className, $moduleName, $targetDirectory);
         $this->generateDao($fieldRecords, $namespace, $className, $daoClassName, $moduleName, $targetDirectory, $moduleSingular, $modulePlural);
 
-        return ['daoClassName' => $daoClassName, 'fullDaoClassName'=>$namespace.'\\'.$daoClassName];
+        return $namespace.'\\'.$daoClassName;
     }
 
     public function generateBean($fields, $namespace, $className, $moduleName, $targetDirectory)
