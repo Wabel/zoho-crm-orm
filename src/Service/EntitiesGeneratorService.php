@@ -378,10 +378,5 @@ class EntitiesGeneratorService
             $class->setMethod($method);
         }
     }
-
-    public function getZohoClient()
-    {
-        return $this->zohoClient;
-    }
     
 }
