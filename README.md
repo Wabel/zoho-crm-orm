@@ -74,7 +74,7 @@ $entitiesGenerator = new EntitiesGeneratorService($client);
 $directory = __DIR__.'/src/TestNamespace/';
 // The namespace for the beans and DAOs.
 $namespace = 'TestNamespace';
-
+// That returns an array containing each created Dao by using the fully qualified class name
 $generator->generateAll($directory, $namespace);
 ```
 

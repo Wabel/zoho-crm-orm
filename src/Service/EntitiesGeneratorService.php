@@ -30,13 +30,15 @@ class EntitiesGeneratorService
      *
      * @param string $targetDirectory
      * @param string $namespace
+     * @return array Array containing each fully qualified dao class name
      */
     public function generateAll($targetDirectory, $namespace)
     {
         $modules = $this->zohoClient->getModules();
+        $zohoModules = [];
         foreach ($modules->getRecords() as $module) {
             try {
-                $this->generateModule($module['key'], $module['pl'], $module['sl'], $targetDirectory, $namespace);
+                $zohoModules[] = $this->generateModule($module['key'], $module['pl'], $module['sl'], $targetDirectory, $namespace);
             } catch (ZohoCRMException $e) {
                 $this->logger->notice('Error thrown when retrieving fields for module {module}. Error message: {error}.',
                     [
@@ -46,8 +48,18 @@ class EntitiesGeneratorService
                     ]);
             }
         }
+        return $zohoModules;
     }
 
+    /**
+     * Generate a dao for a zoho module
+     * @param string $moduleName
+     * @param string $modulePlural
+     * @param string $moduleSingular
+     * @param string $targetDirectory
+     * @param string $namespace
+     * @return string The fully qualified Dao class name
+     */
     public function generateModule($moduleName, $modulePlural, $moduleSingular, $targetDirectory, $namespace)
     {
         $fields = $this->zohoClient->getFields($moduleName);
@@ -64,6 +76,8 @@ class EntitiesGeneratorService
 
         $this->generateBean($fieldRecords, $namespace, $className, $moduleName, $targetDirectory);
         $this->generateDao($fieldRecords, $namespace, $className, $daoClassName, $moduleName, $targetDirectory, $moduleSingular, $modulePlural);
+
+        return $namespace.'\\'.$daoClassName;
     }
 
     public function generateBean($fields, $namespace, $className, $moduleName, $targetDirectory)
@@ -364,4 +378,5 @@ class EntitiesGeneratorService
             $class->setMethod($method);
         }
     }
+    
 }
