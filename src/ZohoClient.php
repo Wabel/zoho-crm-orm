@@ -398,7 +398,7 @@ class ZohoClient
      */
     public function getModules()
     {
-        return $this->call('Info', 'getModules', []);
+        return $this->call('Info', 'getModules', ['type' => 'api']);
     }
 
     /**
