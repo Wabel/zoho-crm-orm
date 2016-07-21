@@ -89,19 +89,23 @@ class ZohoClientTest extends PHPUnit_Framework_TestCase
         // Now, let's test multiple saves over 100.
         $multiplePoolContact = [];
         for ($i = 0; $i < 302; ++$i) {
-            $multiplePoolContact['contact'][$i] = new \TestNamespace\Contact();
-            $multiplePoolContact['lastName'][$i] = uniqid('Test');
-            $multiplePoolContact['email'][$i] = $multiplePoolContact['lastName'][$i].'@test.com';
-            $multiplePoolContact['contact'][$i]->setLastName($multiplePoolContact['lastName'][$i]);
-            $multiplePoolContact['contact'][$i]->setFirstName('TestMultiplePoolUser');
+            $multiplePoolContact['contact']['key'.$i] = new \TestNamespace\Contact();
+            $multiplePoolContact['lastName']['key'.$i] = uniqid('Test');
+            $multiplePoolContact['email']['key'.$i] = $multiplePoolContact['lastName']['key'.$i].'@test.com';
+            $multiplePoolContact['contact']['key'.$i]->setLastName($multiplePoolContact['lastName']['key'.$i]);
+            $multiplePoolContact['contact']['key'.$i]->setFirstName('TestMultiplePoolUser');
         }
         $contactZohoDao->save($multiplePoolContact['contact']);
 
         for ($i = 0; $i < 302; ++$i) {
-            $multiplePoolContact['contact'][$i]->setEmail($multiplePoolContact['email'][$i]);
+            $multiplePoolContact['contact']['key'.$i]->setEmail($multiplePoolContact['email']['key'.$i]);
         }
         $beforePoolMultiple = new DateTime();
         $contactZohoDao->save($multiplePoolContact['contact']);
+
+        for ($i = 0; $i < 302; ++$i) {
+            $this->assertNotNull($multiplePoolContact['contact']['key'.$i]->getZohoId());
+        }
 
         // We need to wait for Zoho to index the record.
         sleep(120);
