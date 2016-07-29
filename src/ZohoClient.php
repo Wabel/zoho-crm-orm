@@ -5,6 +5,7 @@ namespace Wabel\Zoho\CRM;
 use GuzzleHttp\Client;
 use Wabel\Zoho\CRM\Exception\ZohoCRMResponseException;
 use Wabel\Zoho\CRM\Request\Response;
+use GuzzleHttp\Psr7\Request;
 
 /**
  * Client for provide interface with Zoho CRM.
@@ -401,6 +402,23 @@ class ZohoClient
         return $this->call('Info', 'getModules', ['type' => 'api']);
     }
 
+
+    /**
+     * Get the body of the request
+     *
+     * @param array $params Params
+     * @param Object $data Data
+     * @return string
+     */
+    protected function getRequestBody($params, $data, $options)
+    {
+        if($data){
+            return http_build_query($data, '', '&');
+        }
+        return '';
+    }
+
+    
     /**
      * Make the call using the client.
      *
@@ -418,22 +436,11 @@ class ZohoClient
         $getParams['scope'] = 'crmapi';
 
         $uri = $this->getRequestURI($module, $command);
-        //$content = $this->getRequestContent($params, $data, $options);
 
-        $request = $this->zohoRestClient->createRequest('POST', $uri);
-        foreach ($postParams as $key => $value) {
-            $request->getBody()->setField($key, $value);
-        }
-
-        $query = $request->getQuery();
-        foreach ($getParams as $param => $value) {
-            $query[$param] = $value;
-        }
-
-        $response = $this->zohoRestClient->send($request);
-
-        $zohoResponse = new Response($response->getBody()->__toString(), $module, $command);
-
+//        $params = $this->getRequestBody([], $postParams, []);
+//        $stream = \GuzzleHttp\Psr7\stream_for($params);
+        $response = $this->zohoRestClient->request('POST', $uri, ['query'=>$getParams+$postParams]);
+        $zohoResponse = new Response((string)$response->getBody(), $module, $command);
         if ($zohoResponse->ifSuccess()) {
             return $zohoResponse;
         } else {
