@@ -275,18 +275,21 @@ class EntitiesGeneratorService
                     if ($field['customfield']) {
                         $name .= '_ID';
                         $generateId = true;
+                    } elseif ($field['label'] === $moduleName.' Owner') {
+                        // Check if this is a "owner" field.
+                        $name = 'SMOWNERID';
+                        $generateId = true;
                     } else {
-                        switch ($field['label']) {
-                            //TODO : To be completed with known lookup fields that are not custom fields but default in Zoho
-                            case 'Account Name':
-                                $name = 'ACCOUNTID';
-                                $generateId = true;
-                                break;
-                            case 'Contact Name':
-                                $name = 'CONTACTID';
-                                $generateId = true;
-                                break;
-                        }
+                        $mapping = [
+                            'Account Name' => 'ACCOUNTID',
+                            'Contact Name' => 'CONTACTID',
+                            'Parent Account' => 'PARENTACCOUNTID',
+                            'Campaign Source' => 'CAMPAIGNID',
+                        ];
+                        if (isset($mapping[$field['label']])) {
+                            $name = $mapping[$field['label']];
+                            $generateId = true;
+                        } 
                     }
                     if ($generateId) {
                         $fields[$key][$name]['req'] = false;
