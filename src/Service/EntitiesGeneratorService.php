@@ -30,6 +30,7 @@ class EntitiesGeneratorService
      *
      * @param string $targetDirectory
      * @param string $namespace
+     *
      * @return array Array containing each fully qualified dao class name
      */
     public function generateAll($targetDirectory, $namespace)
@@ -48,16 +49,19 @@ class EntitiesGeneratorService
                     ]);
             }
         }
+
         return $zohoModules;
     }
 
     /**
-     * Generate a dao for a zoho module
+     * Generate a dao for a zoho module.
+     *
      * @param string $moduleName
      * @param string $modulePlural
      * @param string $moduleSingular
      * @param string $targetDirectory
      * @param string $namespace
+     *
      * @return string The fully qualified Dao class name
      */
     public function generateModule($moduleName, $modulePlural, $moduleSingular, $targetDirectory, $namespace)
@@ -143,22 +147,25 @@ class EntitiesGeneratorService
                     if ($customfield) {
                         $name .= '_ID';
                         $generateId = true;
+                    } elseif ($name === $moduleName.' Owner') {
+                        // Check if this is a "owner" field.
+                        $name = 'SMOWNERID';
+                        $generateId = true;
                     } else {
-                        switch ($name) {
-                            //TODO : To be completed with known lookup fields that are not custom fields but default in Zoho
-                            case 'Account Name' :
-                                $name = 'ACCOUNTID';
-                                $generateId = true;
-                                break;
-                            case 'Contact Name' :
-                                $name = 'CONTACTID';
-                                $generateId = true;
-                                break;
-                            default :
-                                $this->logger->warning('Unable to set a ID for the field {name} of the {module} module', [
+                        $mapping = [
+                            'Account Name' => 'ACCOUNTID',
+                            'Contact Name' => 'CONTACTID',
+                            'Parent Account' => 'PARENTACCOUNTID',
+                            'Campaign Source' => 'CAMPAIGNID',
+                        ];
+                        if (isset($mapping[$name])) {
+                            $name = $mapping[$name];
+                            $generateId = true;
+                        } else {
+                            $this->logger->warning('Unable to set a ID for the field {name} of the {module} module', [
                                     'name' => $name,
                                     'module' => $moduleName,
-                                ]);
+                            ]);
                         }
                     }
 
@@ -206,13 +213,15 @@ class EntitiesGeneratorService
      * @param $name
      * @param array $usedNames
      */
-    private function getUniqueIdentifier($name, array $usedIdentifiers) {
+    private function getUniqueIdentifier($name, array $usedIdentifiers)
+    {
         $id = self::camelCase($name);
         if (isset($usedIdentifiers[$id])) {
             $counter = 2;
             while (isset($usedIdentifiers[$id.'_'.$counter])) {
-                $counter++;
+                ++$counter;
             }
+
             return $id.'_'.$counter;
         } else {
             return $id;
@@ -269,11 +278,11 @@ class EntitiesGeneratorService
                     } else {
                         switch ($field['label']) {
                             //TODO : To be completed with known lookup fields that are not custom fields but default in Zoho
-                            case 'Account Name' :
+                            case 'Account Name':
                                 $name = 'ACCOUNTID';
                                 $generateId = true;
                                 break;
-                            case 'Contact Name' :
+                            case 'Contact Name':
                                 $name = 'CONTACTID';
                                 $generateId = true;
                                 break;
@@ -373,10 +382,9 @@ class EntitiesGeneratorService
             $method->setDescription($setterDescription);
             $method->addParameter(PhpParameter::create($name)->setType($type));
             $method->setBody("\$this->{$name} = \${$name};\n".
-                             "\$this->dirty".ucfirst($name)." = true;\n".
-                             "return \$this;");
+                             '$this->dirty'.ucfirst($name)." = true;\n".
+                             'return $this;');
             $class->setMethod($method);
         }
     }
-    
 }
