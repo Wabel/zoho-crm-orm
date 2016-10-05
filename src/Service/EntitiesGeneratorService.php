@@ -147,7 +147,7 @@ class EntitiesGeneratorService
                     if ($customfield) {
                         $name .= '_ID';
                         $generateId = true;
-                    } elseif ($name === $moduleName.' Owner') {
+                    } elseif ($name === $moduleSingular.' Owner') {
                         // Check if this is a "owner" field.
                         $name = 'SMOWNERID';
                         $generateId = true;
