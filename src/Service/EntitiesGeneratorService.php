@@ -78,13 +78,13 @@ class EntitiesGeneratorService
 
         $fieldRecords = $fields->getRecords();
 
-        $this->generateBean($fieldRecords, $namespace, $className, $moduleName, $targetDirectory);
+        $this->generateBean($fieldRecords, $namespace, $className, $moduleName, $targetDirectory, $moduleSingular);
         $this->generateDao($fieldRecords, $namespace, $className, $daoClassName, $moduleName, $targetDirectory, $moduleSingular, $modulePlural);
 
         return $namespace.'\\'.$daoClassName;
     }
 
-    public function generateBean($fields, $namespace, $className, $moduleName, $targetDirectory)
+    public function generateBean($fields, $namespace, $className, $moduleName, $targetDirectory, $moduleSingular)
     {
 
 //        if (class_exists($namespace."\\".$className)) {
@@ -275,7 +275,7 @@ class EntitiesGeneratorService
                     if ($field['customfield']) {
                         $name .= '_ID';
                         $generateId = true;
-                    } elseif ($field['label'] === $moduleName.' Owner') {
+                    } elseif ($field['label'] === $moduleSingular.' Owner') {
                         // Check if this is a "owner" field.
                         $name = 'SMOWNERID';
                         $generateId = true;
