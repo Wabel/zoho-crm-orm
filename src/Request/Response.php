@@ -82,6 +82,13 @@ class Response
    */
   protected $file;
 
+  /**
+   * All fields[attributes] for users.
+   *
+   * @var array
+   */
+  protected$userFields = array();
+  
     public function __construct($xmlstr, $module, $method)
     {
         $this->xmlstr = $xmlstr;
@@ -271,13 +278,21 @@ class Response
     protected function parseResponseGetUsers($xml)
     {
         $records = array();
+        $this->userFields[] = 'name';
         foreach ($xml as $user) {
             foreach ($user->attributes() as $key => $value) {
                 $records[(string) $user['id']][$key] = (string) $value;
+                if(!in_array($key,$this->userFields)){
+                    $this->userFields[] = $key;
+                }
             }
             $records[(string) $user['id']]['name'] = (string) $user;
         }
         $this->records = $records;
+    }
+
+    public function getUserFields (){
+        return $this->userFields;
     }
 
     protected function parseResponseGetModules($xml)
