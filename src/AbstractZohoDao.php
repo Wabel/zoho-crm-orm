@@ -30,11 +30,11 @@ abstract class AbstractZohoDao
         $this->zohoClient = $zohoClient;
     }
 
-    abstract protected function getModule();
-    abstract protected function getSingularModuleName();
-    abstract protected function getPluralModuleName();
-    abstract protected function getBeanClassName();
-    abstract protected function getFields();
+    abstract public function getModule();
+    abstract public function getSingularModuleName();
+    abstract public function getPluralModuleName();
+    abstract public function getBeanClassName();
+    abstract public function getFields();
 
     protected $flatFields;
 
@@ -76,11 +76,16 @@ abstract class AbstractZohoDao
 
             // First, let's fill the ID.
             // The ID is CONTACTID or ACCOUNTID or Id depending on the Zoho type.
+
             $idName = strtoupper(rtrim($this->getModule(), 's'));
             if (isset($record[$idName.'ID'])) {
                 $id = $record[$idName.'ID'];
             } elseif (isset($record[$idName.'_ID'])) {
                 $id = $record[$idName.'_ID'];
+            } elseif (isset($record['ACTIVITYID'])) {
+                $id = $record['ACTIVITYID']; //There is no good way to parse this with the dynamic beans and daos
+            } elseif (isset($record['BOOKID'])) {
+                $id = $record['BOOKID']; //There is no good way to parse this with the dynamic beans and daos
             } else {
                 $id = $record['Id'];
             }
@@ -103,7 +108,12 @@ abstract class AbstractZohoDao
                             }
                             break;
                         case 'DateTime':
-                            $value = \DateTime::createFromFormat('Y-m-d H:i:s', $value);
+                            if (!$dateObj = \DateTime::createFromFormat('Y-m-d H:i:s', $value)) {
+                                $dateObj = \DateTime::createFromFormat('Y-m-d', $value);
+                            }
+
+                            $value = $dateObj;
+
                             break;
                         case 'Boolean':
                             $value = ($value == 'true');
@@ -258,29 +268,70 @@ abstract class AbstractZohoDao
         $globalResponse = array();
 
         do {
-            try {
-                $fromIndex = count($globalResponse) + 1;
-                $toIndex = $fromIndex + self::MAX_GET_RECORDS - 1;
+            $fromIndex = count($globalResponse) + 1;
+            $toIndex = $fromIndex + self::MAX_GET_RECORDS - 1;
 
-                if ($limit) {
-                    $toIndex = min($limit - 1, $toIndex);
-                }
-
-                $response = $this->zohoClient->getRecords($this->getModule(), $sortColumnString, $sortOrderString, $lastModifiedTime, $selectColumns, $fromIndex, $toIndex);
-                $beans = $this->getBeansFromResponse($response);
-            } catch (ZohoCRMResponseException $e) {
-                // No records found? Let's return an empty array!
-                if ($e->getCode() == 4422) {
-                    $beans = array();
-                } else {
-                    throw $e;
-                }
+            if ($limit) {
+                $toIndex = min($limit - 1, $toIndex);
             }
+
+            $beans = $this->requestRecords($sortColumnString, $sortOrderString, $lastModifiedTime, $selectColumns, $fromIndex, $toIndex);
 
             $globalResponse = array_merge($globalResponse, $beans);
         } while (count($beans) == self::MAX_GET_RECORDS);
 
         return $globalResponse;
+    }
+
+    /**
+     * Implements getRecords API method.
+     *
+     * @param $sortColumnString
+     * @param $sortOrderString
+     * @param \DateTime $lastModifiedTime
+     * @param $selectColumns
+     * @param $limit
+     *
+     * @param null $offset
+     * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
+     *
+     * @throws ZohoCRMResponseException
+     */
+    public function getPaginatedRecords($sortColumnString = null, $sortOrderString = null, \DateTime $lastModifiedTime = null, $selectColumns = null, $limit = null, $offset = null)
+    {
+        $globalResponse = array();
+
+        do {
+            $fromIndex = $offset + count($globalResponse) + 1;
+            $toIndex = $fromIndex + self::MAX_GET_RECORDS - 1;
+
+            if ($limit) {
+                $toIndex = min($fromIndex + $limit - 1, $toIndex);
+            }
+
+            $beans = $this->requestRecords($sortColumnString, $sortOrderString, $lastModifiedTime, $selectColumns, $fromIndex, $toIndex);
+
+            $globalResponse = array_merge($globalResponse, $beans);
+        } while (count($globalResponse) < $limit && !empty($beans));
+
+        return $globalResponse;
+    }
+
+    private function requestRecords($sortColumnString, $sortOrderString, $lastModifiedTime, $selectColumns, $fromIndex, $toIndex)
+    {
+        try {
+            $response = $this->zohoClient->getRecords($this->getModule(), $sortColumnString, $sortOrderString, $lastModifiedTime, $selectColumns, $fromIndex, $toIndex);
+            $beans = $this->getBeansFromResponse($response);
+        } catch (ZohoCRMResponseException $e) {
+            // No records found? Let's return an empty array!
+            if ($e->getCode() == 4422) {
+                $beans = array();
+            } else {
+                throw $e;
+            }
+        }
+
+        return $beans;
     }
 
     /**
