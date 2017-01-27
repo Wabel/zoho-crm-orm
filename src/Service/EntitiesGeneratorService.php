@@ -75,11 +75,12 @@ class EntitiesGeneratorService
         $namespace = trim($namespace, '\\');
         $className = self::upperCamelCase($moduleSingular);
         $daoClassName = $className.'ZohoDao';
+        $beanClassName = $className.'ZohoBean';
 
         $fieldRecords = $fields->getRecords();
 
-        $this->generateBean($fieldRecords, $namespace, $className, $moduleName, $targetDirectory, $moduleSingular);
-        $this->generateDao($fieldRecords, $namespace, $className, $daoClassName, $moduleName, $targetDirectory, $moduleSingular, $modulePlural);
+        $this->generateBean($fieldRecords, $namespace, $beanClassName, $moduleName, $targetDirectory, $moduleSingular);
+        $this->generateDao($fieldRecords, $namespace, $beanClassName, $daoClassName, $moduleName, $targetDirectory, $moduleSingular, $modulePlural);
 
         return $namespace.'\\'.$daoClassName;
     }
