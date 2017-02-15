@@ -78,6 +78,11 @@ class EntitiesGeneratorService
 
         $fieldRecords = $fields->getRecords();
 
+        // Case is a reserved keyword. Let's rename it.
+        if ($className === 'Case') {
+            $className = 'ZohoCase';
+        }
+
         $this->generateBean($fieldRecords, $namespace, $className, $moduleName, $targetDirectory, $moduleSingular);
         $this->generateDao($fieldRecords, $namespace, $className, $daoClassName, $moduleName, $targetDirectory, $moduleSingular, $modulePlural);
 
