@@ -263,7 +263,7 @@ abstract class AbstractZohoDao
                 $toIndex = $fromIndex + self::MAX_GET_RECORDS - 1;
 
                 if ($limit) {
-                    $toIndex = min($limit - 1, $toIndex);
+                    $toIndex = min($limit, $toIndex);
                 }
 
                 $response = $this->zohoClient->getRecords($this->getModule(), $sortColumnString, $sortOrderString, $lastModifiedTime, $selectColumns, $fromIndex, $toIndex);
