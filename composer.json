@@ -10,9 +10,9 @@
 		"ORM"
 	],
 	"require" : {
-		"php" : ">=5.4",
+		"php" : ">=5.5",
 		"guzzlehttp/guzzle": "~6.0",
-	    "gossi/php-code-generator" : "dev-master",
+	    "gossi/php-code-generator" : "^0.4",
 	    "symfony/options-resolver": "~2.6.0",
         "psr/log": "~1.0"
 	},

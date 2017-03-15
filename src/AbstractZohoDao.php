@@ -94,16 +94,16 @@ abstract class AbstractZohoDao
 
                     switch ($fields[$key]['type']) {
                         case 'Date':
-                            if ($dateObj = \DateTime::createFromFormat('M/d/Y', $value)) {
+                            if ($dateObj = \DateTimeImmutable::createFromFormat('M/d/Y', $value)) {
                                 $value = $dateObj;
-                            } elseif ($dateObj = \DateTime::createFromFormat('Y-m-d', $value)) {
+                            } elseif ($dateObj = \DateTimeImmutable::createFromFormat('Y-m-d', $value)) {
                                 $value = $dateObj;
                             } else {
                                 throw new ZohoCRMException('Unable to convert the Date field "'.$key."\" into a DateTime PHP object from the the record $id of the module ".$this->getModule().'.');
                             }
                             break;
                         case 'DateTime':
-                            $value = \DateTime::createFromFormat('Y-m-d H:i:s', $value);
+                            $value = \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $value);
                             break;
                         case 'Boolean':
                             $value = ($value == 'true');
