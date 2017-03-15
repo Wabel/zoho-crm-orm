@@ -118,13 +118,11 @@ class EntitiesGeneratorService
                 $dv = $field['dv'];
                 $customfield = $field['customfield'];
                 $nullable = false;
-                $phpSetterType = null;
 
                 switch ($type) {
                     case 'DateTime':
                     case 'Date':
-                        $phpType = '\\DateTimeImmutable';
-                        $phpSetterType = '\\DateTimeInterface';
+                        $phpType = '\\DateTimeInterface';
                         $nullable = true;
                         break;
                     case 'Boolean':
@@ -147,7 +145,7 @@ class EntitiesGeneratorService
                     'Type: '.$type."\n".
                     'Read only: '.($isreadonly ? 'true' : 'false')."\n".
                     'Max length: '.$maxlength."\n".
-                    'Custom field: '.($customfield ? 'true' : 'false')."\n", $phpType, $nullable, $phpSetterType);
+                    'Custom field: '.($customfield ? 'true' : 'false')."\n", $phpType, $nullable);
 
                 // Adds a ID field for lookups
                 if ($type === 'Lookup') {
@@ -355,12 +353,8 @@ class EntitiesGeneratorService
         return $str;
     }
 
-    private static function registerProperty(PhpClass $class, $name, $description, $type, $nullable = false, $setterType = null)
+    private static function registerProperty(PhpClass $class, $name, $description, $type, $nullable = false)
     {
-        if ($setterType === null) {
-            $setterType = $type;
-        }
-
         if (!$class->hasProperty($name)) {
             $property = PhpProperty::create($name);
             $property->setDescription($description);
@@ -396,7 +390,7 @@ class EntitiesGeneratorService
         if (!$class->hasMethod($setterName)) {
             $method = PhpMethod::create($setterName);
             $method->setDescription($setterDescription);
-            $parameter = PhpParameter::create($name)->setType($setterType);
+            $parameter = PhpParameter::create($name)->setType($type);
             if ($nullable) {
                 $parameter->setValue(null);
             }
