@@ -94,16 +94,16 @@ abstract class AbstractZohoDao
 
                     switch ($fields[$key]['type']) {
                         case 'Date':
-                            if ($dateObj = \DateTime::createFromFormat('M/d/Y', $value)) {
+                            if ($dateObj = \DateTimeImmutable::createFromFormat('M/d/Y', $value)) {
                                 $value = $dateObj;
-                            } elseif ($dateObj = \DateTime::createFromFormat('Y-m-d', $value)) {
+                            } elseif ($dateObj = \DateTimeImmutable::createFromFormat('Y-m-d', $value)) {
                                 $value = $dateObj;
                             } else {
                                 throw new ZohoCRMException('Unable to convert the Date field "'.$key."\" into a DateTime PHP object from the the record $id of the module ".$this->getModule().'.');
                             }
                             break;
                         case 'DateTime':
-                            $value = \DateTime::createFromFormat('Y-m-d H:i:s', $value);
+                            $value = \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $value);
                             break;
                         case 'Boolean':
                             $value = ($value == 'true');
@@ -263,7 +263,7 @@ abstract class AbstractZohoDao
                 $toIndex = $fromIndex + self::MAX_GET_RECORDS - 1;
 
                 if ($limit) {
-                    $toIndex = min($limit - 1, $toIndex);
+                    $toIndex = min($limit, $toIndex);
                 }
 
                 $response = $this->zohoClient->getRecords($this->getModule(), $sortColumnString, $sortOrderString, $lastModifiedTime, $selectColumns, $fromIndex, $toIndex);

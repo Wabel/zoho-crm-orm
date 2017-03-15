@@ -145,6 +145,10 @@ class ZohoClientTest extends PHPUnit_Framework_TestCase
 
         $modifiedTime = $records[0]->getModifiedTime()->sub(DateInterval::createFromDateString('10 seconds'));
 
+        // Test getRecords with a limit
+        $records = $contactZohoDao->getRecords(null, null, $modifiedTime, null, 2);
+        $this->assertCount(2, $records);
+
         // Test if the 302 Contacts has been well saved and are deleted
         //$records = $contactZohoDao->getRecords("Modified Time", "asc", $modifiedTime);
         $records = $contactZohoDao->getRecords(null, null, $modifiedTime);

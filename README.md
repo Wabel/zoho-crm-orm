@@ -1,6 +1,6 @@
-[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/Wabel/zoho-crm-orm/badges/quality-score.png?b=1.0)](https://scrutinizer-ci.com/g/Wabel/zoho-crm-orm/?branch=1.0)
-[![Build Status](https://travis-ci.org/Wabel/zoho-crm-orm.svg?branch=1.0)](https://travis-ci.org/Wabel/zoho-crm-orm)
-[![Coverage Status](https://coveralls.io/repos/Wabel/zoho-crm-orm/badge.svg?branch=1.0)](https://coveralls.io/r/Wabel/zoho-crm-orm?branch=1.0)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/Wabel/zoho-crm-orm/badges/quality-score.png?b=1.1)](https://scrutinizer-ci.com/g/Wabel/zoho-crm-orm/?branch=1.1)
+[![Build Status](https://travis-ci.org/Wabel/zoho-crm-orm.svg?branch=1.1)](https://travis-ci.org/Wabel/zoho-crm-orm)
+[![Coverage Status](https://coveralls.io/repos/Wabel/zoho-crm-orm/badge.svg?branch=1.1)](https://coveralls.io/r/Wabel/zoho-crm-orm?branch=1.1)
 
 Wabel's Zoho-CRM ORM
 ====================
