@@ -121,7 +121,7 @@ class EntitiesGeneratorService
                 switch ($type) {
                     case 'DateTime':
                     case 'Date':
-                        $phpType = '\\DateTime';
+                        $phpType = '\\DateTimeImmutable';
                         break;
                     case 'Boolean':
                         $phpType = 'bool';
@@ -254,7 +254,7 @@ class EntitiesGeneratorService
                 switch ($type) {
                     case 'DateTime':
                     case 'Date':
-                        $phpType = '\\DateTime';
+                        $phpType = '\\DateTimeImmutable';
                         break;
                     case 'Boolean':
                         $phpType = 'bool';
