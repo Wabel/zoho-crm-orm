@@ -276,6 +276,45 @@ class EntitiesGeneratorService
                 $fields[$key][$name]['setter'] = 'set'.ucfirst($identifier);
                 $fields[$key][$name]['name'] = $identifier;
 
+                $specialOwnerFieldsMapping = [
+                    'Created By' => 'SMCREATORID',
+                    'Modified By' =>'MODIFIEDBY',
+                ];
+
+                $specialDateFieldsMapping = [
+                    'Created Time' => 'createdTime',
+                    'Modified Time' =>'modifiedTime'
+                ];
+                //Detect Special Fields from Zoho - Using API, you cannot create or update these system-generated fields:
+                $systemGenerated = false;
+                if (isset($specialOwnerFieldsMapping[$field['label']]) || isset($specialDateFieldsMapping[$field['label']])){
+                   $systemGenerated = true;
+                }
+                if($systemGenerated){
+                    $dateSpecialField = false;
+                    if (isset($specialOwnerFieldsMapping[$field['label']])) {
+                        $name = $specialOwnerFieldsMapping[$field['label']];
+                        $generateId = true;
+                    }
+                    if (isset($specialDateFieldsMapping[$field['label']])) {
+                        $name = $specialDateFieldsMapping[$field['label']];
+                        $generateId = true;
+                        $dateSpecialField = true;
+                    }
+                    if ($generateId) {
+                        $fields[$key][$name]['req'] = false;
+                        $fields[$key][$name]['type'] = !$dateSpecialField?'Lookup ID':'Date';
+                        $fields[$key][$name]['isreadonly'] = !$dateSpecialField?true:false;
+                        $fields[$key][$name]['maxlength'] = !$dateSpecialField?100:20;
+                        $fields[$key][$name]['label'] = $name;
+                        $fields[$key][$name]['dv'] = $name;
+                        $fields[$key][$name]['customfield'] = true;
+                        $fields[$key][$name]['phpType'] = !$dateSpecialField?$phpType:'\\DateTime';
+                        $fields[$key][$name]['getter'] = 'get'.ucfirst(self::camelCase($name));
+                        $fields[$key][$name]['setter'] = 'set'.ucfirst(self::camelCase($name));
+                        $fields[$key][$name]['name'] = self::camelCase($name);
+                    }
+                }
                 if ($type === 'Lookup') {
                     $generateId = false;
 
@@ -296,7 +335,7 @@ class EntitiesGeneratorService
                         if (isset($mapping[$field['label']])) {
                             $name = $mapping[$field['label']];
                             $generateId = true;
-                        } 
+                        }
                     }
                     if ($generateId) {
                         $fields[$key][$name]['req'] = false;
