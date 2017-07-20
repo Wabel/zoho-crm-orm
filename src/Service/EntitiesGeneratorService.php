@@ -198,7 +198,6 @@ class EntitiesGeneratorService
 
         self::registerProperty($class, 'createdTime', "The time the record was created in Zoho\nType: DateTime\n", '\\DateTime');
         self::registerProperty($class, 'modifiedTime', "The last time the record was modified in Zoho\nType: DateTime\n", '\\DateTime');
-
         $method = PhpMethod::create('isDirty');
         $method->setDescription('Returns whether a property is changed or not.');
         $method->addParameter(PhpParameter::create('name'));
@@ -276,40 +275,41 @@ class EntitiesGeneratorService
                 $fields[$key][$name]['setter'] = 'set'.ucfirst($identifier);
                 $fields[$key][$name]['name'] = $identifier;
 
+
+                //Detect Special Fields from Zoho - Using API, you cannot create or update these system-generated fields:
+                //@Todo: Manage these fields. The problem comes "MODIFIEDBY" and "Modified By" fields
                 $specialOwnerFieldsMapping = [
                     'Created By' => 'SMCREATORID',
                     'Modified By' =>'MODIFIEDBY',
                 ];
-
                 $specialDateFieldsMapping = [
                     'Created Time' => 'createdTime',
                     'Modified Time' =>'modifiedTime'
                 ];
-                //Detect Special Fields from Zoho - Using API, you cannot create or update these system-generated fields:
+                $linkedSystemGeneratedFields = [
+                    'Created By' => 'Created Time',
+                    'Modified By' =>'Modified Time',
+                ];
                 $systemGenerated = false;
-                if (isset($specialOwnerFieldsMapping[$field['label']]) || isset($specialDateFieldsMapping[$field['label']])){
+                if(array_key_exists($field['label'],$specialOwnerFieldsMapping)){
                    $systemGenerated = true;
                 }
-                if($systemGenerated){
+                if($systemGenerated && isset($linkedSystemGeneratedFields[$field['label']])){
                     $dateSpecialField = false;
-                    if (isset($specialOwnerFieldsMapping[$field['label']])) {
-                        $name = $specialOwnerFieldsMapping[$field['label']];
-                        $generateId = true;
-                    }
-                    if (isset($specialDateFieldsMapping[$field['label']])) {
-                        $name = $specialDateFieldsMapping[$field['label']];
+                    if (isset($specialDateFieldsMapping[$linkedSystemGeneratedFields[$field['label']]])) {
+                        $name = $specialDateFieldsMapping[$linkedSystemGeneratedFields[$field['label']]];
                         $generateId = true;
                         $dateSpecialField = true;
                     }
-                    if ($generateId) {
+                    if ($generateId && $dateSpecialField) {
                         $fields[$key][$name]['req'] = false;
-                        $fields[$key][$name]['type'] = !$dateSpecialField?'Lookup ID':'Date';
-                        $fields[$key][$name]['isreadonly'] = !$dateSpecialField?true:false;
-                        $fields[$key][$name]['maxlength'] = !$dateSpecialField?100:20;
+                        $fields[$key][$name]['type'] = 'Date';
+                        $fields[$key][$name]['isreadonly'] = false;
+                        $fields[$key][$name]['maxlength'] = 20;
                         $fields[$key][$name]['label'] = $name;
                         $fields[$key][$name]['dv'] = $name;
                         $fields[$key][$name]['customfield'] = true;
-                        $fields[$key][$name]['phpType'] = !$dateSpecialField?$phpType:'\\DateTime';
+                        $fields[$key][$name]['phpType'] = '\\DateTime';
                         $fields[$key][$name]['getter'] = 'get'.ucfirst(self::camelCase($name));
                         $fields[$key][$name]['setter'] = 'set'.ucfirst(self::camelCase($name));
                         $fields[$key][$name]['name'] = self::camelCase($name);
