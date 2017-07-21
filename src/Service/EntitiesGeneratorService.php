@@ -303,7 +303,7 @@ class EntitiesGeneratorService
                     }
                     if ($generateId && $dateSpecialField) {
                         $fields[$key][$name]['req'] = false;
-                        $fields[$key][$name]['type'] = 'Date';
+                        $fields[$key][$name]['type'] = 'DateTime';
                         $fields[$key][$name]['isreadonly'] = false;
                         $fields[$key][$name]['maxlength'] = 20;
                         $fields[$key][$name]['label'] = $name;
