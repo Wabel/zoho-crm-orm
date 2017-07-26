@@ -122,13 +122,25 @@ abstract class AbstractZohoDao
     }
 
     /**
+     * Convert an array of ZohoBeans into a SimpleXMLElement for use when inserting/updating related records.
+     *
+     * @param $zohoBeans ZohoBeanInterface[]
+     *
+     * @return \SimpleXMLElement The SimpleXMLElement containing the XML for a request
+     */
+    public function toXmlRelatedRecords($zohoBeans)
+    {
+    	return $this->toXml($zohoBeans, 1);
+    }
+
+    /**
      * Convert an array of ZohoBeans into a SimpleXMLElement.
      *
      * @param $zohoBeans ZohoBeanInterface[]
      *
      * @return \SimpleXMLElement The SimpleXMLElement containing the XML for a request
      */
-    public function toXml($zohoBeans)
+    public function toXml($zohoBeans, $isRelatedRecords = 0)
     {
         $module = $this->getModule();
 
@@ -145,7 +157,12 @@ abstract class AbstractZohoDao
             $row->addAttribute('no', $no);
 
             $fl = $row->addChild('FL', $zohoBean->getZohoId());
-            $fl->addAttribute('val', 'Id');
+            $id = 'Id';
+            if ($isRelatedRecords) {
+	            $idName = strtoupper(rtrim($this->getModule(), 's'));
+	            $id = $idName . 'ID';
+	    }
+            $fl->addAttribute('val', $id);
 
             foreach ($properties as $name => $params) {
                 $camelCaseName = $params['name'];

@@ -18,7 +18,7 @@ class ZohoClient
      *
      * @var string
      */
-    const BASE_URI = 'https://crm.zoho.com/crm/private';
+    protected $BASE_URI = 'https://crm.zoho.com/crm/private';
 
     /**
      * Token used for session of request.
@@ -60,6 +60,10 @@ class ZohoClient
         // Only XML format is supported for the time being
         $this->format = 'xml';
         $this->zohoRestClient = $zohoRestClient ?: new Client();
+    }
+
+    public function setEuDomain() {
+    	$this->BASE_URI = 'https://crm.zoho.eu/crm/private';
     }
 
     /**
@@ -358,6 +362,34 @@ class ZohoClient
     }
 
     /**
+     * Implements updateRelatedRecords API method.
+     *
+     * @param $module
+     * @param $relatedModule
+     * @param \SimpleXMLElement $xmlData
+     * @param string            $id
+     * @param bool              $wfTrigger
+     *
+     * @return Response
+     *
+     * @throws ZohoCRMResponseException
+     */
+    public function updateRelatedRecords($module, $relatedModule, $xmlData, $id = null, $wfTrigger = null, $version = 4, $newFormat = 2)
+    {
+        $params['newFormat'] = $newFormat;
+        $params['version'] = $version;
+        $params['relatedModule'] = $relatedModule;
+        if ($wfTrigger) {
+            $params['wfTrigger'] = 'true';
+        }
+        if ($id) {
+            $params['id'] = $id;
+        }
+
+        return $this->call($module, 'updateRelatedRecords', $params, ['xmlData' => $xmlData->asXML()]);
+    }
+
+    /**
      * Implements uploadFile API method.
      *
      * @param $module
@@ -448,7 +480,7 @@ class ZohoClient
         if (empty($module)) {
             throw new \RuntimeException('Zoho CRM module is not set.');
         }
-        $parts = array(self::BASE_URI, $this->format, $module, $command);
+        $parts = array($this->BASE_URI, $this->format, $module, $command);
 
         return implode('/', $parts);
     }

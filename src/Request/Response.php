@@ -241,10 +241,16 @@ class Response
           //preg_match('/[0-9]{18}/', $this->message, $matches);
           //$this->recordId = $matches[0];
       }
+      
+      // updateRelatedRecords
+      elseif (isset($xml->result->success->code)) {
+          $this->code = (string) $xml->result->success->code;
+          $this->message = 'success';		// We use this string below to determine the successfulness of the call
+      }
 
       // downloadFile
       else {
-          throw new ZohoCRMException('Unknown Zoho CRM response format.');
+          throw new ZohoCRMException('Unknown Zoho CRM response format');
       }
         }
     }
