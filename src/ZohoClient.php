@@ -458,7 +458,7 @@ class ZohoClient
             unset($postParams['xmlData']);
         }
 
-        $response = $this->zohoRestClient->request('POST', $uri, ['query'=>$getParams,'multipart'=> $postParams]);
+        $response = $this->zohoRestClient->post($uri, ['query'=>$getParams,'body'=> $postParams]);
         $zohoResponse = new Response((string)$response->getBody(), $module, $command);
         if ($zohoResponse->ifSuccess()) {
             return $zohoResponse;
