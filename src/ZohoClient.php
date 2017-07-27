@@ -450,15 +450,7 @@ class ZohoClient
         $getParams['scope'] = 'crmapi';
 
         $uri = $this->getRequestURI($module, $command);
-        if(isset($postParams['xmlData'])){
-            $postParams[]=[
-                'name' => 'xmlData',
-                'contents' => $postParams['xmlData']
-            ];
-            unset($postParams['xmlData']);
-        }
-
-        $response = $this->zohoRestClient->post($uri, ['query'=>$getParams,'body'=> $postParams, 'headers' => ['Content-Type'=>'multipart/form-data']]);
+        $response = $this->zohoRestClient->post($uri, ['query'=>$getParams,'body'=> $postParams]);
         $zohoResponse = new Response((string)$response->getBody(), $module, $command);
         if ($zohoResponse->ifSuccess()) {
             return $zohoResponse;
