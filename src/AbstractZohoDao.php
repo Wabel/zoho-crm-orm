@@ -55,6 +55,13 @@ abstract class AbstractZohoDao
         return $this->flatFields;
     }
 
+    protected $duplicateCheck = self::ON_DUPLICATE_MERGE;
+
+    public function setDuplicateCheck($duplicateCheck)
+    {
+	$this->duplicateCheck = $duplicateCheck;
+    }
+
     /**
      * Parse a Zoho Response in order to retrieve one or several ZohoBeans from it.
      *
@@ -438,9 +445,12 @@ abstract class AbstractZohoDao
      *
      * @throws ZohoCRMResponseException
      */
-    public function insertRecords($beans, $wfTrigger = null, $duplicateCheck = 2, $isApproval = null)
+    public function insertRecords($beans, $wfTrigger = null, $duplicateCheck = null, $isApproval = null)
     {
         $records = [];
+
+	// For duplicate check, use the setting passed or the object-wide setting
+	$duplicateCheck = $duplicateCheck ?: $this->duplicateCheck;
 
         if ($wfTrigger) {
             // If we trigger workflows, we trigger the insert of beans one by one.
@@ -578,8 +588,11 @@ abstract class AbstractZohoDao
      * TODO: isApproval is not used by each module.
      * TODO: wfTrigger only usable for a single record update/insert.
      */
-    public function save($beans, $wfTrigger = false, $duplicateCheck = self::ON_DUPLICATE_MERGE, $isApproval = false)
+    public function save($beans, $wfTrigger = false, $duplicateCheck = null, $isApproval = false)
     {
+	// For duplicate check, use the setting passed or the object-wide setting
+	$duplicateCheck = $duplicateCheck ?: $this->duplicateCheck;
+
         if (!is_array($beans)) {
             $beans = [$beans];
         }
