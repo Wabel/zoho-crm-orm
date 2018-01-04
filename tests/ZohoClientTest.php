@@ -1,10 +1,12 @@
 <?php
 
+use Wabel\Zoho\CRM\ZohoClient;
+
 class ZohoClientTest extends PHPUnit_Framework_TestCase
 {
     public function getClient()
     {
-        return new \Wabel\Zoho\CRM\ZohoClient($GLOBALS['auth_token']);
+        return new ZohoClient(ZohoClient::COM_BASE_URI, $GLOBALS['auth_token']);
     }
 
     public function testGetModules()
@@ -145,6 +147,10 @@ class ZohoClientTest extends PHPUnit_Framework_TestCase
 
         $modifiedTime = $records[0]->getModifiedTime()->sub(DateInterval::createFromDateString('10 seconds'));
 
+        // Test getRecords with a limit
+        $records = $contactZohoDao->getRecords(null, null, $modifiedTime, null, 2);
+        $this->assertLessThanOrEqual(2, count($records));
+
         // Test if the 302 Contacts has been well saved and are deleted
         //$records = $contactZohoDao->getRecords("Modified Time", "asc", $modifiedTime);
         $records = $contactZohoDao->getRecords(null, null, $modifiedTime);
@@ -153,7 +159,7 @@ class ZohoClientTest extends PHPUnit_Framework_TestCase
 
         $this->assertCount(302, $records);
         foreach ($records as $key => $record) {
-            $this->assertInstanceOf('\\TestNamespace\\Contact', $record);
+            $this->assertTrue(is_object($record));
             $this->assertEquals('TestMultiplePoolUser', $record->getFirstName());
             $this->assertContains($record->getLastName(), $multiplePoolContact['lastName']);
             $this->assertContains($record->getEmail(), $multiplePoolContact['email']);
