@@ -11,7 +11,7 @@
 	],
 	"require" : {
 		"php" : ">=5.5",
-		"guzzlehttp/guzzle": "~5.0",
+		"guzzlehttp/guzzle": "~6.1",
 	    "gossi/php-code-generator" : "^0.4 || ^0.5",
         "psr/log": "~1.0"
 	},
