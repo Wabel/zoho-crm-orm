@@ -62,6 +62,13 @@ abstract class AbstractZohoDao
 	$this->duplicateCheck = $duplicateCheck;
     }
 
+    protected $wfTrigger = false;
+
+    public function setWorkflowTrigger($wfTrigger)
+    {
+	$this->wfTrigger = $wfTrigger;
+    }
+
     /**
      * Parse a Zoho Response in order to retrieve one or several ZohoBeans from it.
      *
@@ -449,8 +456,9 @@ abstract class AbstractZohoDao
     {
         $records = [];
 
-	// For duplicate check, use the setting passed or the object-wide setting
+	// For duplicate check and wfTrigger, use the setting passed or the object-wide setting
 	$duplicateCheck = $duplicateCheck ?: $this->duplicateCheck;
+	$wfTrigger = ($wfTrigger === null ? $this->wfTrigger : $wfTrigger);
 
         if ($wfTrigger) {
             // If we trigger workflows, we trigger the insert of beans one by one.
@@ -504,6 +512,8 @@ abstract class AbstractZohoDao
     {
         $records = [];
 
+	$wfTrigger = ($wfTrigger === null ? $this->wfTrigger : $wfTrigger);
+	
         if ($wfTrigger) {
             // If we trigger workflows, we trigger the insert of beans one by one.
             foreach ($beans as $bean) {
@@ -590,9 +600,10 @@ abstract class AbstractZohoDao
      */
     public function save($beans, $wfTrigger = false, $duplicateCheck = null, $isApproval = false)
     {
-	// For duplicate check, use the setting passed or the object-wide setting
+	// For duplicate check and wfTrigger, use the setting passed or the object-wide setting
 	$duplicateCheck = $duplicateCheck ?: $this->duplicateCheck;
-
+	$wfTrigger = ($wfTrigger === null ? $this->wfTrigger : $wfTrigger);
+	
         if (!is_array($beans)) {
             $beans = [$beans];
         }
