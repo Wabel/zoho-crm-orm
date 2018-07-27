@@ -598,7 +598,7 @@ abstract class AbstractZohoDao
      * TODO: isApproval is not used by each module.
      * TODO: wfTrigger only usable for a single record update/insert.
      */
-    public function save($beans, $wfTrigger = false, $duplicateCheck = null, $isApproval = false)
+    public function save($beans, $wfTrigger = null, $duplicateCheck = null, $isApproval = false)
     {
 	// For duplicate check and wfTrigger, use the setting passed or the object-wide setting
 	$duplicateCheck = $duplicateCheck ?: $this->duplicateCheck;
