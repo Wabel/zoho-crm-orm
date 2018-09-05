@@ -16,11 +16,25 @@ use Wabel\Zoho\CRM\Request\Response;
 class ZohoClient
 {
     /**
-     * URL for call request.
+     * .com URL for call request.
      *
      * @var string
      */
-    const BASE_URI = 'https://crm.zoho.com/crm/private';
+    const COM_BASE_URI = 'https://crm.zoho.com/crm/private';
+
+    /**
+     * .eu URL for call request.
+     *
+     * @var string
+     */
+    const EU_BASE_URI = 'https://crm.zoho.eu/crm/private';
+
+    /**
+     * Configurable URL for call request.
+     *
+     * @var string
+     */
+    protected $baseUri;
 
     /**
      * Token used for session of request.
@@ -53,11 +67,13 @@ class ZohoClient
     /**
      * Construct.
      *
+     * @param string $baseUri        Configurable URL for call request
      * @param string $authtoken      Token for connection
      * @param Client $zohoRestClient Guzzl Client for connection [optional]
      */
-    public function __construct($authtoken, Client $zohoRestClient = null)
+    public function __construct($baseUri, $authtoken, Client $zohoRestClient = null)
     {
+        $this->baseUri = $baseUri;
         $this->authtoken = $authtoken;
         // Only XML format is supported for the time being
         $this->format = 'xml';
@@ -472,7 +488,7 @@ class ZohoClient
         if (empty($module)) {
             throw new \RuntimeException('Zoho CRM module is not set.');
         }
-        $parts = array(self::BASE_URI, $this->format, $module, $command);
+        $parts = array($this->baseUri, $this->format, $module, $command);
 
         return implode('/', $parts);
     }
