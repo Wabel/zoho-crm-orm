@@ -67,11 +67,11 @@ class ZohoClient
     /**
      * Construct.
      *
-     * @param string $baseUri        Configurable URL for call request
      * @param string $authtoken      Token for connection
      * @param Client $zohoRestClient Guzzl Client for connection [optional]
+     * @param string $baseUri        Configurable URL for call request
      */
-    public function __construct($baseUri, $authtoken, Client $zohoRestClient = null)
+    public function __construct(string $authtoken, Client $zohoRestClient = null, string $baseUri = self::COM_BASE_URI)
     {
         $this->baseUri = $baseUri;
         $this->authtoken = $authtoken;

@@ -9,7 +9,7 @@ class EntitiesGeneratorServiceTest extends \PHPUnit_Framework_TestCase
 {
     public function getEntitiesGeneratorService()
     {
-        $client = new ZohoClient(ZohoClient::COM_BASE_URI, $GLOBALS['auth_token']);
+        $client = new ZohoClient($GLOBALS['auth_token']);
 
         return new EntitiesGeneratorService($client, new NullLogger());
     }

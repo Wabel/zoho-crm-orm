@@ -6,7 +6,7 @@ class ZohoClientTest extends PHPUnit_Framework_TestCase
 {
     public function getClient()
     {
-        return new ZohoClient(ZohoClient::COM_BASE_URI, $GLOBALS['auth_token']);
+        return new ZohoClient($GLOBALS['auth_token']);
     }
 
     public function testGetModules()
