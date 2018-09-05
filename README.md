@@ -78,6 +78,18 @@ $namespace = 'TestNamespace';
 $generator->generateAll($directory, $namespace);
 ```
 
+Targetting the correct Zoho API
+-------------------------------
+
+Out of the box, the client will point to the `https://crm.zoho.com/crm/private` endpoint.
+If your endpoint is different (some users are pointing to `https://crm.zoho.eu/crm/private`), you can
+use the third parameter of the `Client` constructor:
+
+```php
+$zohoClient = new ZohoClient($zohoAuthToken, null, 'https://crm.zoho.eu/crm/private');
+```  
+
+
 Setting up unit tests
 ---------------------
 
