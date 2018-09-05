@@ -126,6 +126,9 @@ abstract class AbstractZohoDao
                         default:
                             break;
                     }
+                    if($value === false && in_array($fields[$key]['type'], ['Date', 'DateTime', ''])){
+                        $value = null;
+                    }
                     $bean->$setter($value);
                 }
             }
