@@ -10,7 +10,7 @@
 		"ORM"
 	],
 	"require" : {
-		"php" : ">=5.5",
+		"php" : ">=7.1",
 		"guzzlehttp/guzzle": "~6.0",
 	    "gossi/php-code-generator" : "^0.4 || ^0.5",
         "psr/log": "~1.0"
