@@ -1,10 +1,12 @@
 <?php
 
+use Wabel\Zoho\CRM\ZohoClient;
+
 class ZohoClientTest extends PHPUnit_Framework_TestCase
 {
     public function getClient()
     {
-        return new \Wabel\Zoho\CRM\ZohoClient($GLOBALS['auth_token']);
+        return new ZohoClient($GLOBALS['auth_token']);
     }
 
     public function testGetModules()

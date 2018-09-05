@@ -2,7 +2,9 @@
 
 namespace Wabel\Zoho\CRM;
 
+use Guzzle\Common\Exception\InvalidArgumentException;
 use GuzzleHttp\Client;
+use Psr\Http\Message\UriInterface;
 use Wabel\Zoho\CRM\Exception\ZohoCRMResponseException;
 use Wabel\Zoho\CRM\Request\Response;
 
@@ -14,11 +16,25 @@ use Wabel\Zoho\CRM\Request\Response;
 class ZohoClient
 {
     /**
-     * URL for call request.
+     * .com URL for call request.
      *
      * @var string
      */
-    const BASE_URI = 'https://crm.zoho.com/crm/private';
+    const COM_BASE_URI = 'https://crm.zoho.com/crm/private';
+
+    /**
+     * .eu URL for call request.
+     *
+     * @var string
+     */
+    const EU_BASE_URI = 'https://crm.zoho.eu/crm/private';
+
+    /**
+     * Configurable URL for call request.
+     *
+     * @var string
+     */
+    protected $baseUri;
 
     /**
      * Token used for session of request.
@@ -53,9 +69,11 @@ class ZohoClient
      *
      * @param string $authtoken      Token for connection
      * @param Client $zohoRestClient Guzzl Client for connection [optional]
+     * @param string $baseUri        Configurable URL for call request
      */
-    public function __construct($authtoken, Client $zohoRestClient = null)
+    public function __construct(string $authtoken, Client $zohoRestClient = null, string $baseUri = self::COM_BASE_URI)
     {
+        $this->baseUri = $baseUri;
         $this->authtoken = $authtoken;
         // Only XML format is supported for the time being
         $this->format = 'xml';
@@ -358,22 +376,72 @@ class ZohoClient
     }
 
     /**
-     * Implements uploadFile API method.
+     * Implements updateRelatedRecords API method.
      *
      * @param $module
-     * @param $id
-     * @param $content
+     * @param $relatedModule
+     * @param \SimpleXMLElement $xmlData
+     * @param string            $id
+     * @param bool              $wfTrigger
      *
      * @return Response
      *
      * @throws ZohoCRMResponseException
      */
-    public function uploadFile($module, $id, $content)
+    public function updateRelatedRecords($module, $relatedModule, $xmlData, $id = null, $wfTrigger = null, $version = 4, $newFormat = 2)
     {
-        $params['id'] = $id;
-        $params['content'] = $content;
+        $params['newFormat'] = $newFormat;
+        $params['version'] = $version;
+        $params['relatedModule'] = $relatedModule;
+        if ($wfTrigger) {
+            $params['wfTrigger'] = 'true';
+        }
+        if ($id) {
+            $params['id'] = $id;
+        }
 
-        return $this->call($module, 'uploadFile', $params);
+        return $this->call($module, 'updateRelatedRecords', $params, ['xmlData' => $xmlData->asXML()]);
+    }
+
+    /**
+     * Implements uploadFile API method.
+     *
+     * @param $module
+     * @param $id
+     * @param $content
+     * @param $filename
+     *
+     * @return Response
+     *
+     * @throws ZohoCRMResponseException
+     */
+    public function uploadFile($module, $id, $content, $filename = null)
+    {
+        $getParams['id'] = $id;
+        $postParams = [];
+
+        if ($content instanceof UriInterface) {
+            $getParams['attachmentUrl'] = $content->__toString();
+        } else {
+            $innerPostParams = [];
+            $innerPostParams['name'] = 'content';
+            if ($content instanceof \SplFileInfo) {
+                $innerPostParams['filename'] = $filename ?? $content->getBasename();
+                $innerPostParams['contents'] = $content->openFile();
+            } else if (is_resource($content)) {
+                $innerPostParams['filename'] = $filename ?? basename(stream_get_meta_data($content)["uri"]);
+                $innerPostParams['contents'] = $content;
+            } else {
+                if (!$filename) {
+                    throw new InvalidArgumentException('filename cannot be empty');
+                }
+                $innerPostParams['filename'] = $filename;
+                $innerPostParams['contents'] = $content;
+            }
+            $postParams[] = $innerPostParams;
+        }
+
+        return $this->call($module, 'uploadFile', ['id' => $id], $postParams);
     }
 
     /**
@@ -448,7 +516,7 @@ class ZohoClient
         if (empty($module)) {
             throw new \RuntimeException('Zoho CRM module is not set.');
         }
-        $parts = array(self::BASE_URI, $this->format, $module, $command);
+        $parts = array($this->baseUri, $this->format, $module, $command);
 
         return implode('/', $parts);
     }

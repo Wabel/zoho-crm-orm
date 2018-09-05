@@ -2,6 +2,7 @@
 
 namespace Wabel\Zoho\CRM;
 
+use Psr\Http\Message\UriInterface;
 use Wabel\Zoho\CRM\Exception\ZohoCRMException;
 use Wabel\Zoho\CRM\Exception\ZohoCRMResponseException;
 use Wabel\Zoho\CRM\Exception\ZohoCRMUpdateException;
@@ -53,6 +54,20 @@ abstract class AbstractZohoDao
         }
 
         return $this->flatFields;
+    }
+
+    protected $duplicateCheck = self::ON_DUPLICATE_MERGE;
+
+    public function setDuplicateCheck($duplicateCheck)
+    {
+	$this->duplicateCheck = $duplicateCheck;
+    }
+
+    protected $wfTrigger = false;
+
+    public function setWorkflowTrigger($wfTrigger)
+    {
+	$this->wfTrigger = $wfTrigger;
     }
 
     /**
@@ -122,13 +137,25 @@ abstract class AbstractZohoDao
     }
 
     /**
+     * Convert an array of ZohoBeans into a SimpleXMLElement for use when inserting/updating related records.
+     *
+     * @param $zohoBeans ZohoBeanInterface[]
+     *
+     * @return \SimpleXMLElement The SimpleXMLElement containing the XML for a request
+     */
+    public function toXmlRelatedRecords($zohoBeans)
+    {
+    	return $this->toXml($zohoBeans, 1);
+    }
+
+    /**
      * Convert an array of ZohoBeans into a SimpleXMLElement.
      *
      * @param $zohoBeans ZohoBeanInterface[]
      *
      * @return \SimpleXMLElement The SimpleXMLElement containing the XML for a request
      */
-    public function toXml($zohoBeans)
+    public function toXml($zohoBeans, $isRelatedRecords = 0)
     {
         $module = $this->getModule();
 
@@ -145,7 +172,12 @@ abstract class AbstractZohoDao
             $row->addAttribute('no', $no);
 
             $fl = $row->addChild('FL', $zohoBean->getZohoId());
-            $fl->addAttribute('val', 'Id');
+            $id = 'Id';
+            if ($isRelatedRecords) {
+	            $idName = strtoupper(rtrim($this->getModule(), 's'));
+	            $id = $idName . 'ID';
+	        }
+            $fl->addAttribute('val', $id);
 
             foreach ($properties as $name => $params) {
                 $camelCaseName = $params['name'];
@@ -421,9 +453,13 @@ abstract class AbstractZohoDao
      *
      * @throws ZohoCRMResponseException
      */
-    public function insertRecords($beans, $wfTrigger = null, $duplicateCheck = 2, $isApproval = null)
+    public function insertRecords($beans, $wfTrigger = null, $duplicateCheck = null, $isApproval = null)
     {
         $records = [];
+
+	// For duplicate check and wfTrigger, use the setting passed or the object-wide setting
+	$duplicateCheck = $duplicateCheck ?: $this->duplicateCheck;
+	$wfTrigger = ($wfTrigger === null ? $this->wfTrigger : $wfTrigger);
 
         if ($wfTrigger) {
             // If we trigger workflows, we trigger the insert of beans one by one.
@@ -477,6 +513,8 @@ abstract class AbstractZohoDao
     {
         $records = [];
 
+	$wfTrigger = ($wfTrigger === null ? $this->wfTrigger : $wfTrigger);
+	
         if ($wfTrigger) {
             // If we trigger workflows, we trigger the insert of beans one by one.
             foreach ($beans as $bean) {
@@ -529,15 +567,16 @@ abstract class AbstractZohoDao
      * Implements uploadFile API method.
      *
      * @param string $id      Zoho Id of the record to retrieve
-     * @param string $content The string containing the file
+     * @param string|\SplFileInfo|resource|UriInterface $content Can be either the content to upload, a file information, a file handle, or the Uri of a remote file.
+     * @param string $filename The name (optional) under which the file will be stored by Zoho CRM. Mandatory if posting content as string.
      *
      * @return Response The Response object
      *
      * @throws ZohoCRMResponseException
      */
-    public function uploadFile($id, $content)
+    public function uploadFile($id, $content, $filename = null)
     {
-        return $this->zohoClient->uploadFile($this->getModule(), $id, $content);
+        return $this->zohoClient->uploadFile($this->getModule(), $id, $content, $filename);
     }
 
     /**
@@ -561,8 +600,12 @@ abstract class AbstractZohoDao
      * TODO: isApproval is not used by each module.
      * TODO: wfTrigger only usable for a single record update/insert.
      */
-    public function save($beans, $wfTrigger = false, $duplicateCheck = self::ON_DUPLICATE_MERGE, $isApproval = false)
+    public function save($beans, $wfTrigger = null, $duplicateCheck = null, $isApproval = false)
     {
+	// For duplicate check and wfTrigger, use the setting passed or the object-wide setting
+	$duplicateCheck = $duplicateCheck ?: $this->duplicateCheck;
+	$wfTrigger = ($wfTrigger === null ? $this->wfTrigger : $wfTrigger);
+	
         if (!is_array($beans)) {
             $beans = [$beans];
         }
