@@ -2,6 +2,7 @@
 
 namespace Wabel\Zoho\CRM;
 
+use Psr\Http\Message\UriInterface;
 use Wabel\Zoho\CRM\Exception\ZohoCRMException;
 use Wabel\Zoho\CRM\Exception\ZohoCRMResponseException;
 use Wabel\Zoho\CRM\Exception\ZohoCRMUpdateException;
@@ -529,15 +530,16 @@ abstract class AbstractZohoDao
      * Implements uploadFile API method.
      *
      * @param string $id      Zoho Id of the record to retrieve
-     * @param string $content The string containing the file
+     * @param string|\SplFileInfo|resource|UriInterface $content Can be either the content to upload, a file information, a file handle, or the Uri of a remote file.
+     * @param string $filename The name (optional) under which the file will be stored by Zoho CRM. Mandatory if posting content as string.
      *
      * @return Response The Response object
      *
      * @throws ZohoCRMResponseException
      */
-    public function uploadFile($id, $content)
+    public function uploadFile($id, $content, $filename = null)
     {
-        return $this->zohoClient->uploadFile($this->getModule(), $id, $content);
+        return $this->zohoClient->uploadFile($this->getModule(), $id, $content, $filename);
     }
 
     /**

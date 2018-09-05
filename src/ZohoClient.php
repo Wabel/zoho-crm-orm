@@ -2,7 +2,9 @@
 
 namespace Wabel\Zoho\CRM;
 
+use Guzzle\Common\Exception\InvalidArgumentException;
 use GuzzleHttp\Client;
+use Psr\Http\Message\UriInterface;
 use Wabel\Zoho\CRM\Exception\ZohoCRMResponseException;
 use Wabel\Zoho\CRM\Request\Response;
 
@@ -363,17 +365,39 @@ class ZohoClient
      * @param $module
      * @param $id
      * @param $content
+     * @param $filename
      *
      * @return Response
      *
      * @throws ZohoCRMResponseException
      */
-    public function uploadFile($module, $id, $content)
+    public function uploadFile($module, $id, $content, $filename = null)
     {
-        $params['id'] = $id;
-        $params['content'] = $content;
+        $getParams['id'] = $id;
+        $postParams = [];
 
-        return $this->call($module, 'uploadFile', $params);
+        if ($content instanceof UriInterface) {
+            $getParams['attachmentUrl'] = $content->__toString();
+        } else {
+            $innerPostParams = [];
+            $innerPostParams['name'] = 'content';
+            if ($content instanceof \SplFileInfo) {
+                $innerPostParams['filename'] = $filename ?? $content->getBasename();
+                $innerPostParams['contents'] = $content->openFile();
+            } else if (is_resource($content)) {
+                $innerPostParams['filename'] = $filename ?? basename(stream_get_meta_data($content)["uri"]);
+                $innerPostParams['contents'] = $content;
+            } else {
+                if (!$filename) {
+                    throw new InvalidArgumentException('filename cannot be empty');
+                }
+                $innerPostParams['filename'] = $filename;
+                $innerPostParams['contents'] = $content;
+            }
+            $postParams[] = $innerPostParams;
+        }
+
+        return $this->call($module, 'uploadFile', ['id' => $id], $postParams);
     }
 
     /**
