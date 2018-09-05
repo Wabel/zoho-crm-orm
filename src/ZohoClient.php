@@ -376,6 +376,34 @@ class ZohoClient
     }
 
     /**
+     * Implements updateRelatedRecords API method.
+     *
+     * @param $module
+     * @param $relatedModule
+     * @param \SimpleXMLElement $xmlData
+     * @param string            $id
+     * @param bool              $wfTrigger
+     *
+     * @return Response
+     *
+     * @throws ZohoCRMResponseException
+     */
+    public function updateRelatedRecords($module, $relatedModule, $xmlData, $id = null, $wfTrigger = null, $version = 4, $newFormat = 2)
+    {
+        $params['newFormat'] = $newFormat;
+        $params['version'] = $version;
+        $params['relatedModule'] = $relatedModule;
+        if ($wfTrigger) {
+            $params['wfTrigger'] = 'true';
+        }
+        if ($id) {
+            $params['id'] = $id;
+        }
+
+        return $this->call($module, 'updateRelatedRecords', $params, ['xmlData' => $xmlData->asXML()]);
+    }
+
+    /**
      * Implements uploadFile API method.
      *
      * @param $module
