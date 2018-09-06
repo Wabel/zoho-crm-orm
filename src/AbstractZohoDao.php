@@ -96,7 +96,10 @@ abstract class AbstractZohoDao
                 $id = $record[$idName.'ID'];
             } elseif (isset($record[$idName.'_ID'])) {
                 $id = $record[$idName.'_ID'];
-            } else {
+            } elseif(isset($record['ACTIVITYID'])){
+                $id = $record['ACTIVITYID'];
+            }
+            else {
                 $id = $record['Id'];
             }
             $bean->setZohoId($id);
