@@ -154,7 +154,8 @@ class EntitiesGeneratorService
                     if ($customfield) {
                         $name .= '_ID';
                         $generateId = true;
-                    } elseif ($name === $moduleSingular.' Owner') {
+                    } elseif ($name === $moduleSingular.' Owner'
+                        || ($dv === $moduleSingular.' Owner' && $name === $moduleName. ' Owner')) {
                         // Check if this is a "owner" field.
                         $name = 'SMOWNERID';
                         $generateId = true;
@@ -321,7 +322,8 @@ class EntitiesGeneratorService
                     if ($field['customfield']) {
                         $name .= '_ID';
                         $generateId = true;
-                    } elseif ($field['label'] === $moduleSingular.' Owner') {
+                    } elseif ($field['label'] === $moduleSingular.' Owner'
+                        || ($field['dv'] === $moduleSingular.' Owner' && $name === $moduleName. ' Owner')) {
                         // Check if this is a "owner" field.
                         $name = 'SMOWNERID';
                         $generateId = true;
