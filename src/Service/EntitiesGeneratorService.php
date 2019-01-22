@@ -8,8 +8,8 @@ use gossi\codegen\model\PhpMethod;
 use gossi\codegen\model\PhpParameter;
 use gossi\codegen\model\PhpProperty;
 use Psr\Log\LoggerInterface;
+use Wabel\Zoho\CRM\Exceptions\ZohoCRMORMException;
 use Wabel\Zoho\CRM\ZohoClient;
-use Wabel\Zoho\CRM\Exception\ZohoCRMException;
 
 /**
  * This class is in charge of generating Zoho entities.
@@ -18,6 +18,16 @@ class EntitiesGeneratorService
 {
     private $zohoClient;
     private $logger;
+
+    public static $defaultZohoFields = ['Created_Time','Modified_Time', 'Last_Activity_Time',
+        'Created_By', 'Modified_By', 'Owner'];
+
+    public static $defaultORMFields = ['createdTime','modifiedTime', 'lastActivityTime',
+        'createdByID', 'modifiedByID', 'createdByName', 'modifiedByName', 'OwnerID', 'OwnerName',
+        'ZCRMRecord'
+    ];
+
+    public static $defaultDateFields = ['createdTime','modifiedTime', 'lastActivityTime'];
 
     public function __construct(ZohoClient $zohoClient, LoggerInterface $logger)
     {
@@ -35,18 +45,27 @@ class EntitiesGeneratorService
      */
     public function generateAll($targetDirectory, $namespace)
     {
+        /**
+         * @var $modules \ZCRMModule[]
+         */
         $modules = $this->zohoClient->getModules();
         $zohoModules = [];
-        foreach ($modules->getRecords() as $module) {
-            try {
-                $zohoModules[] = $this->generateModule($module['key'], $module['pl'], $module['sl'], $targetDirectory, $namespace);
-            } catch (ZohoCRMException $e) {
-                $this->logger->notice('Error thrown when retrieving fields for module {module}. Error message: {error}.',
-                    [
-                        'module' => $module['key'],
-                        'error' => $e->getMessage(),
-                        'exception' => $e,
-                    ]);
+        foreach ($modules as $module) {
+            if($module->isApiSupported()){
+                try {
+                    $module = $this->generateModule($module->getAPIName(), $module->getPluralLabel(),
+                        $module->getSingularLabel(), $targetDirectory, $namespace);
+                    if($module){
+                        $zohoModules[] = $module;
+                    }
+                } catch (ZohoCRMORMException $e) {
+                    $this->logger->notice('Error thrown when retrieving fields for module {module}. Error message: {error}.',
+                        [
+                            'module' => $module->getAPIName(),
+                            'error' => $e->getMessage(),
+                            'exception' => $e,
+                        ]);
+                }
             }
         }
 
@@ -62,12 +81,15 @@ class EntitiesGeneratorService
      * @param string $targetDirectory
      * @param string $namespace
      *
-     * @return string The fully qualified Dao class name
+     * @return string|null The fully qualified Dao class name
      */
     public function generateModule($moduleName, $modulePlural, $moduleSingular, $targetDirectory, $namespace)
     {
-        $fields = $this->zohoClient->getFields($moduleName);
+        $fieldRecords = $this->zohoClient->getFields($moduleName);
 
+        if(!$fieldRecords){
+            return null;
+        }
         if (!file_exists($targetDirectory)) {
             mkdir($targetDirectory, 0775, true);
         }
@@ -76,7 +98,6 @@ class EntitiesGeneratorService
         $className = self::upperCamelCase($moduleSingular);
         $daoClassName = $className.'ZohoDao';
 
-        $fieldRecords = $fields->getRecords();
 
         // Case is a reserved keyword. Let's rename it.
         if ($className === 'Case') {
@@ -89,15 +110,19 @@ class EntitiesGeneratorService
         return $namespace.'\\'.$daoClassName;
     }
 
-    public function generateBean($fields, $namespace, $className, $moduleName, $targetDirectory, $moduleSingular)
+    /**
+     * @param \ZCRMField[] $ZCRMfields
+     * @param string $namespace
+     * @param string $className
+     * @param string $moduleName
+     * @param string $targetDirectory
+     * @param string $moduleSingular
+     * @throws ZohoCRMORMException
+     */
+    public function generateBean(array $ZCRMfields, $namespace, $className, $moduleName, $targetDirectory, $moduleSingular)
     {
 
-//        if (class_exists($namespace."\\".$className)) {
-//            $class = PhpClass::fromReflection(new \ReflectionClass($namespace."\\".$className));
-//        } else {
-            $class = PhpClass::create();
-//        }
-
+        $class = PhpClass::create();
         $class->setName($className)
             ->setNamespace($namespace)
             ->addInterface('\\Wabel\\Zoho\\CRM\\ZohoBeanInterface')
@@ -106,254 +131,260 @@ class EntitiesGeneratorService
         // Let's add the ZohoID property
         self::registerProperty($class, 'zohoId', "The ID of this record in Zoho\nType: string\n", 'string');
 
-        $usedIdentifiers = [];
-
-        foreach ($fields as &$fieldCategory) {
-            foreach ($fieldCategory as $name => &$field) {
-                $req = $field['req'];
-                $type = $field['type'];
-                $isreadonly = $field['isreadonly'];
-                $maxlength = $field['maxlength'];
-                $label = $field['label'];
-                $dv = $field['dv'];
-                $customfield = $field['customfield'];
-                $nullable = false;
-
-                switch ($type) {
-                    case 'DateTime':
-                    case 'Date':
-                        $phpType = '\\DateTimeInterface';
-                        $nullable = true;
-                        break;
-                    case 'Boolean':
-                        $phpType = 'bool';
-                        break;
-                    case 'Integer':
-                        $phpType = 'int';
-                        break;
-                    default:
-                        $phpType = 'string';
-                        break;
-                }
-
-                $field['phpType'] = $phpType;
-
-                $identifier = $this->getUniqueIdentifier($name, $usedIdentifiers);
-                $usedIdentifiers[$identifier] = true;
-
-                self::registerProperty($class, $identifier, 'Zoho field '.$name."\n".
-                    'Type: '.$type."\n".
-                    'Read only: '.($isreadonly ? 'true' : 'false')."\n".
-                    'Max length: '.$maxlength."\n".
-                    'Custom field: '.($customfield ? 'true' : 'false')."\n", $phpType, $nullable);
-
-                // Adds a ID field for lookups
-                if ($type === 'Lookup') {
-                    $generateId = false;
-
-                    if ($customfield) {
-                        $name .= '_ID';
-                        $generateId = true;
-                    } elseif ($name === $moduleSingular.' Owner'
-                        || ($dv === $moduleSingular.' Owner' && $name === $moduleName. ' Owner')) {
-                        // Check if this is a "owner" field.
-                        $name = 'SMOWNERID';
-                        $generateId = true;
-                    } else {
-                        $mapping = [
-                            'Account Name' => 'ACCOUNTID',
-                            'Contact Name' => 'CONTACTID',
-                            'Parent Account' => 'PARENTACCOUNTID',
-                            'Campaign Source' => 'CAMPAIGNID',
-                        ];
-                        if (isset($mapping[$name])) {
-                            $name = $mapping[$name];
-                            $generateId = true;
-                        } else {
-                            $this->logger->warning('Unable to set a ID for the field {name} of the {module} module', [
-                                    'name' => $name,
-                                    'module' => $moduleName,
-                            ]);
-                        }
-                    }
-
-                    if ($generateId) {
-                        $req = false;
-                        $type = 'Lookup ID';
-                        $isreadonly = true;
-                        $maxlength = $field['maxlength'];
-                        $label = $field['label'];
-                        $dv = $field['dv'];
-
-                        $field['phpType'] = $phpType;
-
-                        self::registerProperty($class, ($customfield ? self::camelCase($name) : $name), 'Zoho field '.$name."\n".
-                            'Type: '.$type."\n".
-                            'Read only: '.($isreadonly ? 'true' : 'false')."\n".
-                            'Max length: '.$maxlength."\n".
-                            'Custom field: '.($customfield ? 'true' : 'false')."\n", 'string');
-                    }
-                }
+        foreach ($ZCRMfields as $ZCRMfield) {
+            $name = self::camelCase($ZCRMfield->getApiName());
+            $apiName = $ZCRMfield->getApiName();
+            $type = $ZCRMfield->getDataType();
+            $isreadonly = $ZCRMfield->isReadOnly();
+            $maxlength = $ZCRMfield->getLength();
+            $label = $ZCRMfield->getFieldLabel();
+            $customfield = $ZCRMfield->isCustomField();
+            $nullable = false;
+            switch ($type) {
+                case 'datetime':
+                case 'date':
+                    $phpType = '\\DateTimeInterface';
+                    $nullable = true;
+                    break;
+                case 'boolean':
+                    $phpType = 'bool';
+                    break;
+                case 'bigint':
+                case 'integer':
+                    $phpType = 'int';
+                    break;
+                case 'autonumber':
+                case 'bigint':
+                case 'integer':
+                    $phpType = 'int';
+                    break;
+                case 'currency':
+                case 'decimal':
+                case 'double':
+                case 'percent':
+                    $phpType = 'float';
+                    break;
+                case 'multiselectpicklist':
+                    $phpType = 'string[]';
+                    $nullable = true;
+                    break;
+                case 'picklist':
+                    $phpType = 'string';
+                    $nullable = true;
+                    break;
+                case 'ownerlookup':
+                    $name = self::camelCase($name.'_OwnerID');
+                    $phpType = 'string';
+                    break;
+                case 'lookup':
+                    $name = self::camelCase($name.'_ID');
+                    $phpType = 'string';
+                    break;
+                case 'multiselectlookup':
+                    $phpType = 'string[]';
+                    $name = self::camelCase($name.'_IDs');
+                    $nullable = true;
+                    break;
+                case 'userlookup':
+                    $name = self::camelCase($name.'_UserID');
+                    $phpType = 'string';
+                    $nullable = true;
+                    break;
+                case 'multiuserlookup':
+                    //@Todo: It's a hypothetical field name based on zoho fields architecture
+                    $name = self::camelCase($name.'_UserIDs');
+                    $phpType = 'string[]';
+                    $nullable = true;
+                    break;
+                case 'fileupload':
+                    $phpType = 'text';
+                    break;
+                case 'consent_lookup':
+                case 'profileimage':
+                case 'ALARM':
+                case 'RRULE':
+                case 'event_reminder':
+                    //@Todo: We have to see how we can work with it
+                    continue 2;
+                    break;
+                default:
+                    $phpType = 'string';
+                    break;
             }
+            if(in_array($name, self::$defaultDateFields)){
+                //Zoho provides these fields by ZCRMRecord::getFieldValue() but also by method in ZCRMRecord
+                $phpType = '\\DateTimeImmutable';
+            }
+
+            self::registerProperty($class, $name, 'Zoho field '.$label."\n".
+                'Field API Name: '.$apiName."\n".
+                'Type: '.$type."\n".
+                'Read only: '.($isreadonly ? 'true' : 'false')."\n".
+                'Max length: '.$maxlength."\n".
+                'Custom field: '.($customfield ? 'true' : 'false')."\n", $phpType, $nullable);
         }
 
-        self::registerProperty($class, 'createdTime', "The time the record was created in Zoho\nType: DateTime\n", '\\DateTime');
-        self::registerProperty($class, 'modifiedTime', "The last time the record was modified in Zoho\nType: DateTime\n", '\\DateTime');
-        $method = PhpMethod::create('isDirty');
-        $method->setDescription('Returns whether a property is changed or not.');
-        $method->addParameter(PhpParameter::create('name'));
-        $method->setBody("\$propertyName = 'dirty'.ucfirst(\$name);\nreturn \$this->\$propertyName;");
-        $method->setType('bool');
-        $class->setMethod($method);
+        /**
+         * If Zoho provides them we don't have to create them again
+         */
+        self::registerProperty($class, 'createdTime', "The time the record was created in Zoho\nType: DateTimeImmutable\n", '\\DateTimeImmutable');
+        self::registerProperty($class, 'modifiedTime', "The last time the record was modified in Zoho\nType: DateTimeImmutable\n", '\\DateTimeImmutable');
+        self::registerProperty($class, 'lastActivityTime', "The last activity time the record or a related record was modified in Zoho\nType: DateTimeImmutable\n", '\\DateTimeImmutable', true);
+        self::registerProperty($class, 'createdByOwnerID', "The user id who created the entity in Zoho\nType: string\n", 'string');
+        self::registerProperty($class, 'modifiedByOwnerID', "The user id who modified the entity in Zoho\nType: string\n", 'string');
+        self::registerProperty($class, 'createdByOwnerName', "The user id who created the entity in Zoho\nType: string\n", 'string');
+        self::registerProperty($class, 'modifiedByOwnerName', "The user id who modified the entity in Zoho\nType: string\n", 'string');
+        self::registerProperty($class, 'ownerOwnerID', "Owner ID in Zoho: string\n", 'string');
+        self::registerProperty($class, 'ownerOwnerName', "Owner Name in Zoho: string\n", 'string');
+        self::registerProperty($class, 'ZCRMRecord', "The Wrapped Zoho CRM Record\nType: ZCRMRecord\n", '\\ZCRMRecord');
+        $methodIsDirty = PhpMethod::create('isDirty');
+        $methodIsDirty->setDescription('Returns whether a property is changed or not.');
+        $methodIsDirty->addParameter(PhpParameter::create('name'));
+        $methodIsDirty->setBody("\$propertyName = 'dirty'.ucfirst(\$name);\nreturn \$this->\$propertyName;");
+        $methodIsDirty->setType('bool');
+        $class->setMethod($methodIsDirty);
+        $methodSetDirty = PhpMethod::create('setDirty');
+        $methodSetDirty->setDescription('Returns whether a property is changed or not.');
+        $fieldNameParameter = PhpParameter::create('name');
+        $fieldNameParameter->setType('string');
+        $methodSetDirty->addParameter($fieldNameParameter);
+        $fieldStatusParameter = PhpParameter::create('status');
+        $fieldStatusParameter->setType('bool');
+        $methodSetDirty->addParameter($fieldStatusParameter);
+        $methodSetDirty->setBody("\$propertyName = 'dirty'.ucfirst(\$name);\n\$this->\$propertyName = \$status;");
+        $methodSetDirty->setType('bool');
+        $class->setMethod($methodSetDirty);
 
         $generator = new CodeFileGenerator();
         $code = $generator->generate($class);
 
         if (!file_put_contents(rtrim($targetDirectory, '/').'/'.$className.'.php', $code)) {
-            throw new ZohoCRMException("An error occurred while creating the class $className. Please verify the target directory or the rights of the file.");
+            throw new ZohoCRMORMException("An error occurred while creating the class $className. Please verify the target directory or the rights of the file.");
         }
     }
 
     /**
-     * Returns a unique identifier from the name.
-     *
-     * @param $name
-     * @param array $usedNames
+     * @param \ZCRMPickListValue[] $pickListFieldValues
+     * @return array
      */
-    private function getUniqueIdentifier($name, array $usedIdentifiers)
-    {
-        $id = self::camelCase($name);
-        if (isset($usedIdentifiers[$id])) {
-            $counter = 2;
-            while (isset($usedIdentifiers[$id.'_'.$counter])) {
-                ++$counter;
-            }
-
-            return $id.'_'.$counter;
-        } else {
-            return $id;
-        }
+    public static function ZCRMPickListValueListToArray(array $pickListFieldValues){
+        return array_map(function (\ZCRMPickListValue $pickListValue){
+            return [
+                'displayValue' => $pickListValue->getDisplayValue(),
+                'sequenceNumber' => $pickListValue->getSequenceNumber(),
+                'actualValue' => $pickListValue->getActualValue(),
+                'maps' => $pickListValue->getMaps(),
+            ];
+        },$pickListFieldValues);
     }
-
-    public function generateDao($fields, $namespace, $className, $daoClassName, $moduleName, $targetDirectory, $moduleSingular, $modulePlural)
+    /**
+     * @param \ZCRMField[] $ZCRMfields
+     * @param string $namespace
+     * @param string $className
+     * @param string $daoClassName
+     * @param string $moduleName
+     * @param string $targetDirectory
+     * @param string $moduleSingular
+     * @param string $modulePlural
+     * @throws ZohoCRMORMException
+     */
+    public function generateDao(array $ZCRMfields, $namespace, $className, $daoClassName, $moduleName, $targetDirectory, $moduleSingular, $modulePlural)
     {
-        //        if (class_exists($namespace."\\".$className)) {
-//            $class = PhpClass::fromReflection(new \ReflectionClass($namespace."\\".$daoClassName));
-//        } else {
-            $class = PhpClass::create();
-//        }
+        $class = PhpClass::create();
 
         $class->setName($daoClassName)
             ->setNamespace($namespace)
             ->setParentClassName('\\Wabel\\Zoho\\CRM\\AbstractZohoDao');
 
-        $usedIdentifiers = [];
-
-        foreach ($fields as $key => $fieldCategory) {
-            foreach ($fieldCategory as $name => $field) {
-                $type = $field['type'];
-
-                switch ($type) {
-                    case 'DateTime':
-                    case 'Date':
-                        $phpType = '\\DateTime';
-                        break;
-                    case 'Boolean':
-                        $phpType = 'bool';
-                        break;
-                    case 'Integer':
-                        $phpType = 'int';
-                        break;
-                    default:
-                        $phpType = 'string';
-                        break;
-                }
-
-                $fields[$key][$name]['phpType'] = $phpType;
-                $identifier = $this->getUniqueIdentifier($name, $usedIdentifiers);
-                $usedIdentifiers[$identifier] = true;
-                $fields[$key][$name]['getter'] = 'get'.ucfirst($identifier);
-                $fields[$key][$name]['setter'] = 'set'.ucfirst($identifier);
-                $fields[$key][$name]['name'] = $identifier;
-
-
-                //Detect Special Fields from Zoho - Using API, you cannot create or update these system-generated fields:
-                //@Todo: Manage these fields. The problem comes "MODIFIEDBY" and "Modified By" fields
-                $specialOwnerFieldsMapping = [
-                    'Created By' => 'SMCREATORID',
-                    'Modified By' =>'MODIFIEDBY',
-                ];
-                $specialDateFieldsMapping = [
-                    'Created Time' => 'createdTime',
-                    'Modified Time' =>'modifiedTime'
-                ];
-                $linkedSystemGeneratedFields = [
-                    'Created By' => 'Created Time',
-                    'Modified By' =>'Modified Time',
-                ];
-                $systemGenerated = false;
-                if(array_key_exists($field['label'],$specialOwnerFieldsMapping)){
-                   $systemGenerated = true;
-                }
-                if($systemGenerated && isset($linkedSystemGeneratedFields[$field['label']])){
-                    $dateSpecialField = false;
-                    if (isset($specialDateFieldsMapping[$linkedSystemGeneratedFields[$field['label']]])) {
-                        $name = $specialDateFieldsMapping[$linkedSystemGeneratedFields[$field['label']]];
-                        $generateId = true;
-                        $dateSpecialField = true;
-                    }
-                    if ($generateId && $dateSpecialField) {
-                        $fields[$key][$name]['req'] = false;
-                        $fields[$key][$name]['type'] = 'DateTime';
-                        $fields[$key][$name]['isreadonly'] = false;
-                        $fields[$key][$name]['maxlength'] = 20;
-                        $fields[$key][$name]['label'] = $name;
-                        $fields[$key][$name]['dv'] = $name;
-                        $fields[$key][$name]['customfield'] = true;
-                        $fields[$key][$name]['phpType'] = '\\DateTime';
-                        $fields[$key][$name]['getter'] = 'get'.ucfirst(self::camelCase($name));
-                        $fields[$key][$name]['setter'] = 'set'.ucfirst(self::camelCase($name));
-                        $fields[$key][$name]['name'] = self::camelCase($name);
-                    }
-                }
-                if ($type === 'Lookup') {
-                    $generateId = false;
-
-                    if ($field['customfield']) {
-                        $name .= '_ID';
-                        $generateId = true;
-                    } elseif ($field['label'] === $moduleSingular.' Owner'
-                        || ($field['dv'] === $moduleSingular.' Owner' && $name === $moduleName. ' Owner')) {
-                        // Check if this is a "owner" field.
-                        $name = 'SMOWNERID';
-                        $generateId = true;
-                    } else {
-                        $mapping = [
-                            'Account Name' => 'ACCOUNTID',
-                            'Contact Name' => 'CONTACTID',
-                            'Parent Account' => 'PARENTACCOUNTID',
-                            'Campaign Source' => 'CAMPAIGNID',
-                        ];
-                        if (isset($mapping[$field['label']])) {
-                            $name = $mapping[$field['label']];
-                            $generateId = true;
-                        }
-                    }
-                    if ($generateId) {
-                        $fields[$key][$name]['req'] = false;
-                        $fields[$key][$name]['type'] = 'Lookup ID';
-                        $fields[$key][$name]['isreadonly'] = true;
-                        $fields[$key][$name]['maxlength'] = 100;
-                        $fields[$key][$name]['label'] = $name;
-                        $fields[$key][$name]['dv'] = $name;
-                        $fields[$key][$name]['customfield'] = true;
-                        $fields[$key][$name]['phpType'] = $phpType;
-                        $fields[$key][$name]['getter'] = 'get'.ucfirst(self::camelCase($name));
-                        $fields[$key][$name]['setter'] = 'set'.ucfirst(self::camelCase($name));
-                        $fields[$key][$name]['name'] = self::camelCase($name);
-                    }
-                }
+        $fields = [];
+        foreach ($ZCRMfields as $ZCRMfield) {
+            $name = $ZCRMfield->getApiName();
+            $apiName = $ZCRMfield->getApiName();
+            $type = $ZCRMfield->getDataType();
+            $system =false;
+            if(in_array($ZCRMfield->getApiName(), self::$defaultZohoFields)){
+                $system = true;
             }
+
+            switch ($type) {
+                case 'datetime':
+                case 'date':
+                    $phpType = '\\DateTime';
+                    break;
+                case 'boolean':
+                    $phpType = 'bool';
+                    break;
+                case 'bigint':
+                case 'integer':
+                    $phpType = 'int';
+                    break;
+                case 'autonumber':
+                case 'bigint':
+                case 'integer':
+                    $phpType = 'int';
+                    break;
+                case 'currency':
+                case 'decimal':
+                case 'double':
+                case 'percent':
+                    $phpType = 'float';
+                    break;
+                case 'multiselectpicklist':
+                    $fields[$name]['values']  = self::ZCRMPickListValueListToArray($ZCRMfield->getPickListFieldValues());
+                    $phpType = 'string[]';
+                    break;
+                case 'picklist':
+                    $fields[$name]['values']  = self::ZCRMPickListValueListToArray($ZCRMfield->getPickListFieldValues());
+                    $phpType = 'string';
+                    break;
+                case 'ownerlookup':
+                    $name = self::camelCase($name.'_OwnerID');
+                    $phpType = 'string';
+                    break;
+                case 'lookup':
+                    $name = self::camelCase($name.'_ID');
+                    $phpType = 'string';
+                    break;
+                case 'multiselectlookup':
+                    $phpType = 'string[]';
+                    $name = self::camelCase($name.'_IDs');
+                    break;
+                case 'userlookup':
+                    $name = self::camelCase($name.'_UserID');
+                    $phpType = 'string';
+                    break;
+                case 'multiuserlookup':
+                    //@Todo: It's a hypothetical field name based on zoho fields architecture
+                    $name = self::camelCase($name.'_UserIDs');
+                    $phpType = 'string[]';
+                    break;
+                case 'fileupload':
+                case 'consent_lookup':
+                case 'profileimage':
+                case 'ALARM':
+                case 'RRULE':
+                case 'event_reminder':
+                    //@Todo: We have to see how we can work with it
+                    continue 2;
+                    break;
+                default:
+                    $phpType = 'string';
+                    break;
+            }
+
+            $fields[$name]['phpType'] = $phpType;
+            $fields[$name]['getter'] = 'get'.ucfirst(self::camelCase($name));
+            $fields[$name]['setter'] = 'set'.ucfirst(self::camelCase($name));
+            $fields[$name]['name'] = self::camelCase($name);
+            $fields[$name]['apiName'] = $apiName;
+            $fields[$name]['customfield'] = $ZCRMfield->isCustomField();
+            $fields[$name]['req'] = $ZCRMfield->isMandatory();
+            $fields[$name]['type'] = $ZCRMfield->getDataType();
+            $fields[$name]['isreadonly'] = $ZCRMfield->isReadOnly();
+            $fields[$name]['maxlength']  = $ZCRMfield->getLength();
+            $fields[$name]['label']  = $ZCRMfield->getFieldLabel();
+            $fields[$name]['dv']  = $ZCRMfield->getDefaultValue();
+            $fields[$name]['system'] = $system;
         }
 
         $class->setMethod(PhpMethod::create('getModule')->setBody('return '.var_export($moduleName, true).';'));
@@ -362,7 +393,7 @@ class EntitiesGeneratorService
 
         $class->setMethod(PhpMethod::create('getPluralModuleName')->setBody('return '.var_export($modulePlural, true).';'));
 
-        $class->setMethod(PhpMethod::create('getFields')->setBody('return '.var_export($fields, true).';'));
+        $class->setMethod(PhpMethod::create('getFieldsDetails')->setBody('return '.var_export($fields, true).';'));
 
         $class->setMethod(PhpMethod::create('getBeanClassName')->setBody('return '.var_export($namespace.'\\'.$className, true).';'));
 
@@ -370,7 +401,7 @@ class EntitiesGeneratorService
         $code = $generator->generate($class);
 
         if (!file_put_contents(rtrim($targetDirectory, '/').'/'.$daoClassName.'.php', $code)) {
-            throw new ZohoCRMException("An error occurred while creating the DAO $daoClassName. Please verify the target directory exists or the rights of the file.");
+            throw new ZohoCRMORMException("An error occurred while creating the DAO $daoClassName. Please verify the target directory exists or the rights of the file.");
         }
     }
 
@@ -431,7 +462,14 @@ class EntitiesGeneratorService
         if (!$class->hasMethod($setterName)) {
             $method = PhpMethod::create($setterName);
             $method->setDescription($setterDescription);
-            $parameter = PhpParameter::create($name)->setType($type);
+            $returnType = $type;
+            if(strpos($returnType,'[]') !== false){
+                $returnType = 'array';
+            }
+            $parameter = PhpParameter::create($name)->setType($returnType);
+            if($returnType === 'array'){
+                $parameter->setDescription('An array like '.$type);
+            }
             if ($nullable) {
                 $parameter->setValue(null);
             }
