@@ -162,9 +162,14 @@ abstract class AbstractZohoDao
             /**
              * @var $beansPool ZohoBeanInterface[]
              */
-            $records = array_merge($records, array_map(function ($beanPool) use ($dao){
-                return BeanHelper::createOrUpdateBeanToZCRMRecord($dao, $beanPool);
-            }, $beansPool));
+            $recordsToMerge = array_map(function ($beanPool) use ($dao){
+                /**
+                 * @var $beanPool ZohoBeanInterface
+                 */
+                BeanHelper::createOrUpdateBeanToZCRMRecord($dao, $beanPool);
+                return $beanPool->getZCRMRecord();
+            }, $beansPool);
+            $records = array_merge($records, $recordsToMerge);
             switch ($action){
                 case 'insert':
                      $this->zohoClient->insertRecords($this->getModule(),$records, $wfTrigger);
@@ -182,7 +187,7 @@ abstract class AbstractZohoDao
         }
 
         foreach ($beans as $key => $bean) {
-            BeanHelper::updateZCRMRecordToBean($dao, $bean, $records[$key], false);
+            BeanHelper::updateZCRMRecordToBean($dao, $bean, $records[$key]);
         }
     }
 
@@ -206,7 +211,7 @@ abstract class AbstractZohoDao
      */
     public function updateRecords(array $beans, bool $wfTrigger = false): void
     {
-        $this->createOrUpdate($beans, $wfTrigger, 'insert');
+        $this->createOrUpdate($beans, $wfTrigger, 'update');
     }
 
     /**
@@ -247,10 +252,10 @@ abstract class AbstractZohoDao
      * @throws ZohoCRMORMException
      */
     public function create(){
-        $record = \ZCRMRecord::getInstance($this->getModule());
+        $record = \ZCRMRecord::getInstance($this->getModule(),null);
         $beanClassName = $this->getBeanClassName();
         $bean = new $beanClassName();
-        BeanHelper::updateZCRMRecordToBean($this, $bean, $record, false);
+        BeanHelper::updateZCRMRecordToBean($this, $bean, $record);
         return $bean;
     }
 
