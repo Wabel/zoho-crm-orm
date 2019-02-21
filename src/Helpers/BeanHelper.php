@@ -6,6 +6,7 @@ namespace Wabel\Zoho\CRM\Helpers;
 
 use Wabel\Zoho\CRM\AbstractZohoDao;
 use Wabel\Zoho\CRM\Exceptions\ZohoCRMORMException;
+use Wabel\Zoho\CRM\Service\EntitiesGeneratorService;
 use Wabel\Zoho\CRM\ZohoBeanInterface;
 
 class BeanHelper
@@ -20,21 +21,27 @@ class BeanHelper
         $record = \ZCRMRecord::getInstance($dao->getModule(), $bean->getZohoId());
         $bean->setZCRMRecord($record);
         foreach ($dao->getFields() as $field){
-            if(!$bean->isDirty($field->getName())){
+            if(in_array($field->getName(), EntitiesGeneratorService::$defaultORMSystemFields) || !$bean->isDirty($field->getName())){
                 continue;
             }
-            var_dump($field->getName());
-            var_dump($bean->{$getter}());
-            var_dump($record->getFieldValue($field->getApiName()));
             $getter = $field->getGetter();
             switch ($field->getType()) {
                 case 'date':
+                    /**
+                     * @var $date \DateTimeInterface
+                     */
+                    $date = $bean->{$getter}();
+                    if($date){
+                        $record->setFieldValue($field->getApiName(), $date->format('Y-m-d'));
+                    }
+                    break;
                 case 'datetime':
                 /**
                  * @var $date \DateTimeInterface
                  */
                     $date = $bean->{$getter}();
                     if($date){
+                        $date->setTimezone(new \DateTimeZone($dao->getZohoClient()->getTimezone()));
                         $record->setFieldValue($field->getApiName(), $date->format(\DateTime::ATOM));
                     }
                     break;
@@ -42,14 +49,12 @@ class BeanHelper
                     /**
                      * @var $ZCRMRecord \ZCRMRecord
                      */
-                    $ZCRMRecord = \ZCRMRecord::getInstance($dao->getModule(), $bean->{$getter}());
+                    $ZCRMRecord = \ZCRMRecord::getInstance($field->getLookupModuleName(), $bean->{$getter}());
                     $record->setFieldValue($field->getApiName(), $ZCRMRecord);
                     break;
                 case 'ownerlookup':
                     $record->setFieldValue($field->getApiName(), \ZCRMUser::getInstance($bean->{$getter}(), null));
                     break;
-                case 'multiselectlookup':
-                case 'multiuserlookup':
                 case 'multiselectpicklist':
                     if($bean->{$getter}()){
                         $record->setFieldValue($field->getApiName(), $bean->{$getter}());
@@ -109,7 +114,7 @@ class BeanHelper
                         }
                         break;
                     case 'datetime':
-                        $value = \DateTime::createFromFormat('Y-m-d H:i:s', $value);
+                        $value = \DateTime::createFromFormat(\DateTime::ATOM, $value);
                         break;
                     case 'userlookup':
                     case 'lookup':
@@ -117,7 +122,7 @@ class BeanHelper
                          * @var $ZCRMRecord \ZCRMRecord
                          */
                         $ZCRMRecord = $value;
-                        $value = $ZCRMRecord?$ZCRMRecord->getEntityId():null;
+                        $value = $ZCRMRecord? (is_a($ZCRMRecord, 'ZCRMRecord') ? $ZCRMRecord->getEntityId() : $ZCRMRecord):null;
                         break;
 
                     case 'ownerlookup':
@@ -126,24 +131,6 @@ class BeanHelper
                          */
                         $ZCRMUser = $value;
                         $value = $ZCRMUser?$ZCRMUser->getId():null;
-                        break;
-                    case 'multiselectlookup':
-                        /**
-                         * @var $ZCRMRecords \ZCRMRecord[]
-                         */
-                        $ZCRMRecords = $value;
-                        $value = $ZCRMRecords ? array_map(function(\ZCRMRecord $ZCRMRecord){
-                            return $ZCRMRecord->getEntityId();
-                        },$ZCRMRecords) : null;
-                        break;
-                    case 'multiuserlookup':
-                        /**
-                         * @var $ZCRMUsers \ZCRMUser[]
-                         */
-                        $ZCRMUsers = $value;
-                        $value = $ZCRMUsers ? array_map(function(\ZCRMUser $ZCRMUser){
-                            return $ZCRMUser->getId();
-                        },$ZCRMUsers) : null;
                         break;
                     default:
                         break;

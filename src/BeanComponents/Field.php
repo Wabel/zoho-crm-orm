@@ -78,6 +78,11 @@ class Field
     private $system;
 
     /**
+     * @var string|null
+     */
+    private $lookupModuleName;
+
+    /**
      * @return bool
      */
     public function getReq(): bool
@@ -300,6 +305,24 @@ class Field
     {
         $this->system = $system;
     }
+
+    /**
+     * @return null|string
+     */
+    public function getLookupModuleName(): ?string
+    {
+        return $this->lookupModuleName;
+    }
+
+    /**
+     * @param null|string $lookupModuleName
+     */
+    public function setLookupModuleName(?string $lookupModuleName): void
+    {
+        $this->lookupModuleName = $lookupModuleName;
+    }
+
+
 
 
 }

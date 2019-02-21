@@ -33,6 +33,15 @@ abstract class AbstractZohoDao
     abstract protected function getFieldsDetails();
 
     /**
+     * @return ZohoClient
+     */
+    public function getZohoClient(): ZohoClient
+    {
+        return $this->zohoClient;
+    }
+
+
+    /**
      * @return Field[]
      */
     public function getFields(){
@@ -77,11 +86,20 @@ abstract class AbstractZohoDao
      *
      * @param  string $id
      * @return ZohoBeanInterface[]
+     * @throws ZohoCRMORMException
      */
     public function delete($id): array
     {
-        $ZCRMRecordDeleted = $this->zohoClient->deleteRecords($this->getModule(), $id)->getData();
-        return $this->getBeansFromZCRMRecords($ZCRMRecordDeleted);
+        /***
+         * @var $ZCRMRecordDeleted \EntityResponse[]
+         */
+        $ZCRMRecordsDeleted = $this->zohoClient->deleteRecords($this->getModule(), $id);
+
+        $recordsToDeleted = array_map(function(\EntityResponse $ZCRMRecordDeleted){
+            return $ZCRMRecordDeleted->getData();
+        }, $ZCRMRecordsDeleted);
+
+        return $this->getBeansFromZCRMRecords($recordsToDeleted);
     }
 
     /**

@@ -27,6 +27,10 @@ class EntitiesGeneratorService
         'ZCRMRecord'
     ];
 
+    public static $defaultORMSystemFields = ['createdTime','modifiedTime', 'lastActivityTime',
+        'ZCRMRecord', 'zohoId'
+    ];
+
     public static $defaultDateFields = ['createdTime','modifiedTime', 'lastActivityTime'];
 
     public function __construct(ZohoClient $zohoClient, LoggerInterface $logger)
@@ -181,9 +185,7 @@ class EntitiesGeneratorService
                     $phpType = 'string';
                     break;
                 case 'multiselectlookup':
-                    $phpType = 'string[]';
-                    $name = self::camelCase($name.'_IDs');
-                    $nullable = true;
+                    continue 2;
                     break;
                 case 'userlookup':
                     $name = self::camelCase($name.'_UserID');
@@ -214,6 +216,7 @@ class EntitiesGeneratorService
             if(in_array($name, self::$defaultDateFields)){
                 //Zoho provides these fields by ZCRMRecord::getFieldValue() but also by method in ZCRMRecord
                 $phpType = '\\DateTimeImmutable';
+                $nullable = true;
             }
 
             self::registerProperty($class, $name, 'Zoho field '.$label."\n".
@@ -227,8 +230,8 @@ class EntitiesGeneratorService
         /**
          * If Zoho provides them we don't have to create them again
          */
-        self::registerProperty($class, 'createdTime', "The time the record was created in Zoho\nType: DateTimeImmutable\n", '\\DateTimeImmutable');
-        self::registerProperty($class, 'modifiedTime', "The last time the record was modified in Zoho\nType: DateTimeImmutable\n", '\\DateTimeImmutable');
+        self::registerProperty($class, 'createdTime', "The time the record was created in Zoho\nType: DateTimeImmutable\n", '\\DateTimeImmutable', true);
+        self::registerProperty($class, 'modifiedTime', "The last time the record was modified in Zoho\nType: DateTimeImmutable\n", '\\DateTimeImmutable', true);
         self::registerProperty($class, 'lastActivityTime', "The last activity time the record or a related record was modified in Zoho\nType: DateTimeImmutable\n", '\\DateTimeImmutable', true);
         self::registerProperty($class, 'createdByOwnerID', "The user id who created the entity in Zoho\nType: string\n", 'string');
         self::registerProperty($class, 'modifiedByOwnerID', "The user id who modified the entity in Zoho\nType: string\n", 'string');
@@ -302,6 +305,7 @@ class EntitiesGeneratorService
             $apiName = $ZCRMfield->getApiName();
             $type = $ZCRMfield->getDataType();
             $system =false;
+            $lookupModuleName = null;
             if(in_array($ZCRMfield->getApiName(), self::$defaultZohoFields)){
                 $system = true;
             }
@@ -344,10 +348,10 @@ class EntitiesGeneratorService
                 case 'lookup':
                     $name = self::camelCase($name.'_ID');
                     $phpType = 'string';
+                    $lookupModuleName = $ZCRMfield->getLookupField() ? $ZCRMfield->getLookupField()->getModule():null;
                     break;
                 case 'multiselectlookup':
-                    $phpType = 'string[]';
-                    $name = self::camelCase($name.'_IDs');
+                    continue 2;
                     break;
                 case 'userlookup':
                     $name = self::camelCase($name.'_UserID');
@@ -355,8 +359,7 @@ class EntitiesGeneratorService
                     break;
                 case 'multiuserlookup':
                     //@Todo: It's a hypothetical field name based on zoho fields architecture
-                    $name = self::camelCase($name.'_UserIDs');
-                    $phpType = 'string[]';
+                    continue 2;
                     break;
                 case 'fileupload':
                 case 'consent_lookup':
@@ -385,6 +388,7 @@ class EntitiesGeneratorService
             $fields[$name]['label']  = $ZCRMfield->getFieldLabel();
             $fields[$name]['dv']  = $ZCRMfield->getDefaultValue();
             $fields[$name]['system'] = $system;
+            $fields[$name]['lookupModuleName'] = $lookupModuleName;
         }
 
         $class->setMethod(PhpMethod::create('getModule')->setBody('return '.var_export($moduleName, true).';'));
@@ -435,9 +439,10 @@ class EntitiesGeneratorService
 
             $class->setProperty($property);
         }
+        
 
         $isDirtyName = 'dirty'.ucfirst($name);
-        if (!$class->hasProperty($isDirtyName)) {
+        if (!$class->hasProperty($isDirtyName) && !in_array($name,self::$defaultORMSystemFields)) {
             $dirtyProperty = PhpProperty::create($isDirtyName);
             $dirtyProperty->setDescription("Whether '$name' has been changed or not.");
             $dirtyProperty->setType('bool');
@@ -475,7 +480,7 @@ class EntitiesGeneratorService
             }
             $method->addParameter($parameter);
             $method->setBody("\$this->{$name} = \${$name};\n".
-                             '$this->dirty'.ucfirst($name)." = true;\n".
+                (!in_array($name,self::$defaultORMSystemFields)?'$this->dirty'.ucfirst($name)." = true;\n":"").
                              'return $this;');
             $class->setMethod($method);
         }
