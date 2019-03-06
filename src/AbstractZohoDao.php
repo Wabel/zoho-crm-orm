@@ -94,11 +94,9 @@ abstract class AbstractZohoDao
          * @var $ZCRMRecordDeleted \EntityResponse[]
          */
         $ZCRMRecordsDeleted = $this->zohoClient->deleteRecords($this->getModule(), $id);
-
         $recordsToDeleted = array_map(function(\EntityResponse $ZCRMRecordDeleted){
             return $ZCRMRecordDeleted->getData();
         }, $ZCRMRecordsDeleted);
-
         return $this->getBeansFromZCRMRecords($recordsToDeleted);
     }
 
