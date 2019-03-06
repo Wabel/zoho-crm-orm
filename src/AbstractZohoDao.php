@@ -94,11 +94,9 @@ abstract class AbstractZohoDao
          * @var $ZCRMRecordDeleted \EntityResponse[]
          */
         $ZCRMRecordsDeleted = $this->zohoClient->deleteRecords($this->getModule(), $id);
-
         $recordsToDeleted = array_map(function(\EntityResponse $ZCRMRecordDeleted){
             return $ZCRMRecordDeleted->getData();
         }, $ZCRMRecordsDeleted);
-
         return $this->getBeansFromZCRMRecords($recordsToDeleted);
     }
 
@@ -134,9 +132,6 @@ abstract class AbstractZohoDao
      */
     public function getRecords($cvId = null, $sortColumnString = null, $sortOrderString = null, \DateTime $lastModifiedTime = null, $page = 1, $perPage = 200): array
     {
-        if($this->getSingularModuleName() == 'Visit'){
-            var_dump($this->zohoClient->getRecords($this->getModule()));
-        }
         $ZCRMRecords =  ZCRMModuleHelper::getAllZCRMRecordsFromPagination($this->zohoClient, $this->getModule(),
             $cvId, $sortColumnString, $sortOrderString, $page, $perPage, $lastModifiedTime);
         return $this->getBeansFromZCRMRecords($ZCRMRecords);
