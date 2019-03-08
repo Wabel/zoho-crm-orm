@@ -134,9 +134,6 @@ abstract class AbstractZohoDao
      */
     public function getRecords($cvId = null, $sortColumnString = null, $sortOrderString = null, \DateTime $lastModifiedTime = null, $page = 1, $perPage = 200): array
     {
-        if($this->getSingularModuleName() == 'Visit'){
-            var_dump($this->zohoClient->getRecords($this->getModule()));
-        }
         $ZCRMRecords =  ZCRMModuleHelper::getAllZCRMRecordsFromPagination($this->zohoClient, $this->getModule(),
             $cvId, $sortColumnString, $sortOrderString, $page, $perPage, $lastModifiedTime);
         return $this->getBeansFromZCRMRecords($ZCRMRecords);
@@ -239,7 +236,7 @@ abstract class AbstractZohoDao
      * Saves the bean or array of beans passed in Zoho.
      * It will perform an insert if the bean has no ZohoID or an update if the bean has a ZohoID.
      * wfTrigger only usable for a single record update/insert.
-     * @param  ZohoBeanInterface[] $beans A bean or an array of beans.
+     * @param  ZohoBeanInterface|ZohoBeanInterface[] $beans A bean or an array of beans.
      * @param bool $wfTrigger
      */
     public function save($beans, $wfTrigger = false): void
