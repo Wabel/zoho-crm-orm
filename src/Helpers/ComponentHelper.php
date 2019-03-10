@@ -9,10 +9,11 @@ class ComponentHelper
 {
 
     /**
-     * @param array $fieldConfigurations
+     * @param  array $fieldConfigurations
      * @return Field
      */
-    public static function createFieldFromArray(array $fieldConfigurations){
+    public static function createFieldFromArray(array $fieldConfigurations)
+    {
         $field = new Field();
         foreach ($fieldConfigurations as $keyFieldConfiguration => $valueFieldConfiguration){
             $method = 'set'.ucfirst($keyFieldConfiguration);
