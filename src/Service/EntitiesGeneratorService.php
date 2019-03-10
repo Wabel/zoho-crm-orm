@@ -55,20 +55,24 @@ class EntitiesGeneratorService
         $modules = $this->zohoClient->getModules();
         $zohoModules = [];
         foreach ($modules as $module) {
-            if($module->isApiSupported()){
+            if($module->isApiSupported()) {
                 try {
-                    $module = $this->generateModule($module->getAPIName(), $module->getPluralLabel(),
-                        $module->getSingularLabel(), $targetDirectory, $namespace);
-                    if($module){
+                    $module = $this->generateModule(
+                        $module->getAPIName(), $module->getPluralLabel(),
+                        $module->getSingularLabel(), $targetDirectory, $namespace
+                    );
+                    if($module) {
                         $zohoModules[] = $module;
                     }
                 } catch (ZohoCRMORMException $e) {
-                    $this->logger->notice('Error thrown when retrieving fields for module {module}. Error message: {error}.',
+                    $this->logger->notice(
+                        'Error thrown when retrieving fields for module {module}. Error message: {error}.',
                         [
                             'module' => $module->getAPIName(),
                             'error' => $e->getMessage(),
                             'exception' => $e,
-                        ]);
+                        ]
+                    );
                 }
             }
         }
@@ -91,7 +95,7 @@ class EntitiesGeneratorService
     {
         $fieldRecords = $this->zohoClient->getFields($moduleName);
 
-        if(!$fieldRecords){
+        if(!$fieldRecords) {
             return null;
         }
         if (!file_exists($targetDirectory)) {
@@ -115,12 +119,12 @@ class EntitiesGeneratorService
     }
 
     /**
-     * @param \ZCRMField[] $ZCRMfields
-     * @param string $namespace
-     * @param string $className
-     * @param string $moduleName
-     * @param string $targetDirectory
-     * @param string $moduleSingular
+     * @param  \ZCRMField[] $ZCRMfields
+     * @param  string       $namespace
+     * @param  string       $className
+     * @param  string       $moduleName
+     * @param  string       $targetDirectory
+     * @param  string       $moduleSingular
      * @throws ZohoCRMORMException
      */
     public function generateBean(array $ZCRMfields, $namespace, $className, $moduleName, $targetDirectory, $moduleSingular)
@@ -145,86 +149,88 @@ class EntitiesGeneratorService
             $customfield = $ZCRMfield->isCustomField();
             $nullable = false;
             switch ($type) {
-                case 'datetime':
-                case 'date':
-                    $phpType = '\\DateTimeInterface';
-                    $nullable = true;
+            case 'datetime':
+            case 'date':
+                $phpType = '\\DateTimeInterface';
+                $nullable = true;
+                break;
+            case 'boolean':
+                $phpType = 'bool';
+                break;
+            case 'bigint':
+            case 'integer':
+                $phpType = 'int';
+                break;
+            case 'autonumber':
+            case 'bigint':
+            case 'integer':
+                $phpType = 'int';
+                break;
+            case 'currency':
+            case 'decimal':
+            case 'double':
+            case 'percent':
+                $phpType = 'float';
+                break;
+            case 'multiselectpicklist':
+                $phpType = 'string[]';
+                $nullable = true;
+                break;
+            case 'picklist':
+                $phpType = 'string';
+                $nullable = true;
+                break;
+            case 'ownerlookup':
+                $name = self::camelCase($name.'_OwnerID');
+                $phpType = 'string';
+                break;
+            case 'lookup':
+                $name = self::camelCase($name.'_ID');
+                $phpType = 'string';
+                break;
+            case 'multiselectlookup':
+                continue 2;
                     break;
-                case 'boolean':
-                    $phpType = 'bool';
+            case 'userlookup':
+                $name = self::camelCase($name.'_UserID');
+                $phpType = 'string';
+                $nullable = true;
+                break;
+            case 'multiuserlookup':
+                //@Todo: It's a hypothetical field name based on zoho fields architecture
+                $name = self::camelCase($name.'_UserIDs');
+                $phpType = 'string[]';
+                $nullable = true;
+                break;
+            case 'fileupload':
+                $phpType = 'text';
+                break;
+            case 'consent_lookup':
+            case 'profileimage':
+            case 'ALARM':
+            case 'RRULE':
+            case 'event_reminder':
+                //@Todo: We have to see how we can work with it
+                continue 2;
                     break;
-                case 'bigint':
-                case 'integer':
-                    $phpType = 'int';
-                    break;
-                case 'autonumber':
-                case 'bigint':
-                case 'integer':
-                    $phpType = 'int';
-                    break;
-                case 'currency':
-                case 'decimal':
-                case 'double':
-                case 'percent':
-                    $phpType = 'float';
-                    break;
-                case 'multiselectpicklist':
-                    $phpType = 'string[]';
-                    $nullable = true;
-                    break;
-                case 'picklist':
-                    $phpType = 'string';
-                    $nullable = true;
-                    break;
-                case 'ownerlookup':
-                    $name = self::camelCase($name.'_OwnerID');
-                    $phpType = 'string';
-                    break;
-                case 'lookup':
-                    $name = self::camelCase($name.'_ID');
-                    $phpType = 'string';
-                    break;
-                case 'multiselectlookup':
-                    continue 2;
-                    break;
-                case 'userlookup':
-                    $name = self::camelCase($name.'_UserID');
-                    $phpType = 'string';
-                    $nullable = true;
-                    break;
-                case 'multiuserlookup':
-                    //@Todo: It's a hypothetical field name based on zoho fields architecture
-                    $name = self::camelCase($name.'_UserIDs');
-                    $phpType = 'string[]';
-                    $nullable = true;
-                    break;
-                case 'fileupload':
-                    $phpType = 'text';
-                    break;
-                case 'consent_lookup':
-                case 'profileimage':
-                case 'ALARM':
-                case 'RRULE':
-                case 'event_reminder':
-                    //@Todo: We have to see how we can work with it
-                    continue 2;
-                    break;
-                default:
-                    $phpType = 'string';
-                    break;
+            default:
+                $phpType = 'string';
+                break;
             }
-            if(in_array($name, self::$defaultDateFields)){
+            if(in_array($name, self::$defaultDateFields)) {
                 //Zoho provides these fields by ZCRMRecord::getFieldValue() but also by method in ZCRMRecord
                 $phpType = '\\DateTimeImmutable';
                 $nullable = true;
             }
 
-            self::registerProperty($class, $name, 'Zoho field '.$label."\n".
+            self::registerProperty(
+                $class, $name, 'Zoho field '.$label."\n".
                 'Field API Name: '.$apiName."\n".
                 'Type: '.$type."\n".
                 'Read only: '.($isreadonly ? 'true' : 'false')."\n".
                 'Max length: '.$maxlength."\n".
-                'Custom field: '.($customfield ? 'true' : 'false')."\n", $phpType, $nullable);
+                'Custom field: '.($customfield ? 'true' : 'false')."\n", $phpType, $nullable
+            );
         }
 
         /**
@@ -267,28 +273,31 @@ class EntitiesGeneratorService
     }
 
     /**
-     * @param \ZCRMPickListValue[] $pickListFieldValues
+     * @param  \ZCRMPickListValue[] $pickListFieldValues
      * @return array
      */
-    public static function ZCRMPickListValueListToArray(array $pickListFieldValues){
-        return array_map(function (\ZCRMPickListValue $pickListValue){
-            return [
+    public static function ZCRMPickListValueListToArray(array $pickListFieldValues)
+    {
+        return array_map(
+            function (\ZCRMPickListValue $pickListValue) {
+                return [
                 'displayValue' => $pickListValue->getDisplayValue(),
                 'sequenceNumber' => $pickListValue->getSequenceNumber(),
                 'actualValue' => $pickListValue->getActualValue(),
                 'maps' => $pickListValue->getMaps(),
-            ];
-        },$pickListFieldValues);
+                ];
+            }, $pickListFieldValues
+        );
     }
     /**
-     * @param \ZCRMField[] $ZCRMfields
-     * @param string $namespace
-     * @param string $className
-     * @param string $daoClassName
-     * @param string $moduleName
-     * @param string $targetDirectory
-     * @param string $moduleSingular
-     * @param string $modulePlural
+     * @param  \ZCRMField[] $ZCRMfields
+     * @param  string       $namespace
+     * @param  string       $className
+     * @param  string       $daoClassName
+     * @param  string       $moduleName
+     * @param  string       $targetDirectory
+     * @param  string       $moduleSingular
+     * @param  string       $modulePlural
      * @throws ZohoCRMORMException
      */
     public function generateDao(array $ZCRMfields, $namespace, $className, $daoClassName, $moduleName, $targetDirectory, $moduleSingular, $modulePlural)
@@ -306,73 +315,73 @@ class EntitiesGeneratorService
             $type = $ZCRMfield->getDataType();
             $system =false;
             $lookupModuleName = null;
-            if(in_array($ZCRMfield->getApiName(), self::$defaultZohoFields)){
+            if(in_array($ZCRMfield->getApiName(), self::$defaultZohoFields)) {
                 $system = true;
             }
 
             switch ($type) {
-                case 'datetime':
-                case 'date':
-                    $phpType = '\\DateTime';
+            case 'datetime':
+            case 'date':
+                $phpType = '\\DateTime';
+                break;
+            case 'boolean':
+                $phpType = 'bool';
+                break;
+            case 'bigint':
+            case 'integer':
+                $phpType = 'int';
+                break;
+            case 'autonumber':
+            case 'bigint':
+            case 'integer':
+                $phpType = 'int';
+                break;
+            case 'currency':
+            case 'decimal':
+            case 'double':
+            case 'percent':
+                $phpType = 'float';
+                break;
+            case 'multiselectpicklist':
+                $fields[$name]['values']  = self::ZCRMPickListValueListToArray($ZCRMfield->getPickListFieldValues());
+                $phpType = 'string[]';
+                break;
+            case 'picklist':
+                $fields[$name]['values']  = self::ZCRMPickListValueListToArray($ZCRMfield->getPickListFieldValues());
+                $phpType = 'string';
+                break;
+            case 'ownerlookup':
+                $name = self::camelCase($name.'_OwnerID');
+                $phpType = 'string';
+                break;
+            case 'lookup':
+                $name = self::camelCase($name.'_ID');
+                $phpType = 'string';
+                $lookupModuleName = $ZCRMfield->getLookupField() ? $ZCRMfield->getLookupField()->getModule():null;
+                break;
+            case 'multiselectlookup':
+                continue 2;
                     break;
-                case 'boolean':
-                    $phpType = 'bool';
+            case 'userlookup':
+                $name = self::camelCase($name.'_UserID');
+                $phpType = 'string';
+                break;
+            case 'multiuserlookup':
+                //@Todo: It's a hypothetical field name based on zoho fields architecture
+                continue 2;
                     break;
-                case 'bigint':
-                case 'integer':
-                    $phpType = 'int';
+            case 'fileupload':
+            case 'consent_lookup':
+            case 'profileimage':
+            case 'ALARM':
+            case 'RRULE':
+            case 'event_reminder':
+                //@Todo: We have to see how we can work with it
+                continue 2;
                     break;
-                case 'autonumber':
-                case 'bigint':
-                case 'integer':
-                    $phpType = 'int';
-                    break;
-                case 'currency':
-                case 'decimal':
-                case 'double':
-                case 'percent':
-                    $phpType = 'float';
-                    break;
-                case 'multiselectpicklist':
-                    $fields[$name]['values']  = self::ZCRMPickListValueListToArray($ZCRMfield->getPickListFieldValues());
-                    $phpType = 'string[]';
-                    break;
-                case 'picklist':
-                    $fields[$name]['values']  = self::ZCRMPickListValueListToArray($ZCRMfield->getPickListFieldValues());
-                    $phpType = 'string';
-                    break;
-                case 'ownerlookup':
-                    $name = self::camelCase($name.'_OwnerID');
-                    $phpType = 'string';
-                    break;
-                case 'lookup':
-                    $name = self::camelCase($name.'_ID');
-                    $phpType = 'string';
-                    $lookupModuleName = $ZCRMfield->getLookupField() ? $ZCRMfield->getLookupField()->getModule():null;
-                    break;
-                case 'multiselectlookup':
-                    continue 2;
-                    break;
-                case 'userlookup':
-                    $name = self::camelCase($name.'_UserID');
-                    $phpType = 'string';
-                    break;
-                case 'multiuserlookup':
-                    //@Todo: It's a hypothetical field name based on zoho fields architecture
-                    continue 2;
-                    break;
-                case 'fileupload':
-                case 'consent_lookup':
-                case 'profileimage':
-                case 'ALARM':
-                case 'RRULE':
-                case 'event_reminder':
-                    //@Todo: We have to see how we can work with it
-                    continue 2;
-                    break;
-                default:
-                    $phpType = 'string';
-                    break;
+            default:
+                $phpType = 'string';
+                break;
             }
 
             $fields[$name]['phpType'] = $phpType;
@@ -442,7 +451,7 @@ class EntitiesGeneratorService
         
 
         $isDirtyName = 'dirty'.ucfirst($name);
-        if (!$class->hasProperty($isDirtyName) && !in_array($name,self::$defaultORMSystemFields)) {
+        if (!$class->hasProperty($isDirtyName) && !in_array($name, self::$defaultORMSystemFields)) {
             $dirtyProperty = PhpProperty::create($isDirtyName);
             $dirtyProperty->setDescription("Whether '$name' has been changed or not.");
             $dirtyProperty->setType('bool');
@@ -468,20 +477,22 @@ class EntitiesGeneratorService
             $method = PhpMethod::create($setterName);
             $method->setDescription($setterDescription);
             $returnType = $type;
-            if(strpos($returnType,'[]') !== false){
+            if(strpos($returnType, '[]') !== false) {
                 $returnType = 'array';
             }
             $parameter = PhpParameter::create($name)->setType($returnType);
-            if($returnType === 'array'){
+            if($returnType === 'array') {
                 $parameter->setDescription('An array like '.$type);
             }
             if ($nullable) {
                 $parameter->setValue(null);
             }
             $method->addParameter($parameter);
-            $method->setBody("\$this->{$name} = \${$name};\n".
-                (!in_array($name,self::$defaultORMSystemFields)?'$this->dirty'.ucfirst($name)." = true;\n":"").
-                             'return $this;');
+            $method->setBody(
+                "\$this->{$name} = \${$name};\n".
+                (!in_array($name, self::$defaultORMSystemFields)?'$this->dirty'.ucfirst($name)." = true;\n":"").
+                'return $this;'
+            );
             $class->setMethod($method);
         }
     }

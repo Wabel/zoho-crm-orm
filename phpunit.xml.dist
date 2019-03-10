@@ -42,6 +42,11 @@
         <!--<env name="deal_status" value=""/>-->
         <!--<env name="campaign_type" value=""/>-->
         <!--<env name="filepath_upload" value=""/>-->
+        <!--<env name="custom_module_singular_name" value=""/>-->
+        <!--<env name="custom_module_mandatory_field_name" value=""/>-->
+        <!--<env name="custom_module_picklist_field_name" value=""/>-->
+        <!--<env name="custom_module_date_field_name" value=""/>-->
+        <!--<env name="custom_module_text_field_name" value=""/>-->
     </php>
 
     <filter>

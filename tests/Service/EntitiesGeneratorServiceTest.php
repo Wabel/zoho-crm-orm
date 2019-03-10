@@ -31,7 +31,6 @@ class EntitiesGeneratorServiceTest extends TestCase
                 'token_persistence_path' => getenv('token_persistence_path'),
             ],
             getenv('timeZone')
-
         );
         $this->entitiesGeneratorService = new EntitiesGeneratorService($this->zohoClient, new NullLogger());
     }
@@ -49,7 +48,7 @@ class EntitiesGeneratorServiceTest extends TestCase
 
         $this->assertFileExists(__DIR__.'/../DaoGeneratedTest/Lead.php');
 
-        require __DIR__.'/../DaoGeneratedTest/Lead.php';
+        include __DIR__.'/../DaoGeneratedTest/Lead.php';
 
         // Second iteration: from existing class!
         $daoFullyQualified = $this->entitiesGeneratorService->generateModule('Leads', 'Leads', 'Lead', __DIR__.'/../DaoGeneratedTest/', 'Wabel\\Zoho\\CRM\\DaoGeneratedTest');
