@@ -142,6 +142,7 @@ interface ZohoBeanInterface
 
     /**
      * Sets the Zoho CRM Record for wrapping in the zohoBean Object.
+     *
      * @param \ZCRMRecord $record
      */
     public function setZCRMRecord(\ZCRMRecord $record);
@@ -160,7 +161,7 @@ interface ZohoBeanInterface
      * Returns whether a property is changed or not.
      *
      * @param string $name
-     * @param bool $status
+     * @param bool   $status
      *
      * @return bool
      */

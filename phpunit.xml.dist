@@ -20,7 +20,7 @@
          processIsolation="false"
          stopOnFailure="false"
          bootstrap="./tests/bootstrap.php"
->
+        >
 
     <testsuites>
         <testsuite name="ZohoCRM ORM test suite">
@@ -37,6 +37,16 @@
         <!--<env name="applicationLogFilePath" value=""/>-->
         <!--<env name="persistence_handler_class" value=""/>-->
         <!--<env name="token_persistence_path" value=""/>-->
+        <!--<env name="userid_test" value=""/>-->
+        <!--<env name="timeZone" value=""/>-->
+        <!--<env name="deal_status" value=""/>-->
+        <!--<env name="campaign_type" value=""/>-->
+        <!--<env name="filepath_upload" value=""/>-->
+        <!--<env name="custom_module_singular_name" value=""/>-->
+        <!--<env name="custom_module_mandatory_field_name" value=""/>-->
+        <!--<env name="custom_module_picklist_field_name" value=""/>-->
+        <!--<env name="custom_module_date_field_name" value=""/>-->
+        <!--<env name="custom_module_text_field_name" value=""/>-->
     </php>
 
     <filter>

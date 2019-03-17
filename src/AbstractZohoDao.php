@@ -45,24 +45,30 @@ abstract class AbstractZohoDao
     /**
      * @return Field[]
      */
-    public function getFields(){
-        return array_map(function(array $fieldDetails){
-            return ComponentHelper::createFieldFromArray($fieldDetails);
-        }, $this->getFieldsDetails());
+    public function getFields()
+    {
+        return array_map(
+            function (array $fieldDetails) {
+                return ComponentHelper::createFieldFromArray($fieldDetails);
+            }, $this->getFieldsDetails()
+        );
     }
 
 
     /**
      * Returns a module from Zoho.
+     *
      * @return \ZCRMModule
      */
-    public function getZCRMModule(){
+    public function getZCRMModule()
+    {
         return $this->zohoClient->getModule($this->getModule());
     }
 
     /**
      * Parse a Zoho Response in order to retrieve one or several ZohoBeans from it.
-     * @param \ZCRMRecord[] $ZCRMRecords
+     *
+     * @param  \ZCRMRecord[] $ZCRMRecords
      * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
      * @throws ZohoCRMORMException
      */
@@ -73,7 +79,9 @@ abstract class AbstractZohoDao
 
         foreach ($ZCRMRecords as $record) {
 
-            /** @var ZohoBeanInterface $bean */
+            /**
+ * @var ZohoBeanInterface $bean 
+*/
             $bean = new $beanClass();
             BeanHelper::updateZCRMRecordToBean($this, $bean, $record);
             $beanArray[] = $bean;
@@ -95,9 +103,13 @@ abstract class AbstractZohoDao
          * @var $ZCRMRecordDeleted \EntityResponse[]
          */
         $ZCRMRecordsDeleted = $this->zohoClient->deleteRecords($this->getModule(), $id);
-        $recordsToDeleted = array_map(function(\EntityResponse $ZCRMRecordDeleted){
-            return $ZCRMRecordDeleted->getData();
-        }, $ZCRMRecordsDeleted);
+
+        $recordsToDeleted = array_map(
+            function (\EntityResponse $ZCRMRecordDeleted) {
+                return $ZCRMRecordDeleted->getData();
+            }, $ZCRMRecordsDeleted
+        );
+
         return $this->getBeansFromZCRMRecords($recordsToDeleted);
     }
 
@@ -121,12 +133,12 @@ abstract class AbstractZohoDao
     /**
      * Implements getRecords API method.
      *
-     * @param string|null $cvId
-     * @param string|null $sortColumnString
-     * @param string|null $sortOrderString
-     * @param \DateTime|null $lastModifiedTime
-     * @param int $page
-     * @param int $perPage
+     * @param  string|null    $cvId
+     * @param  string|null    $sortColumnString
+     * @param  string|null    $sortOrderString
+     * @param  \DateTime|null $lastModifiedTime
+     * @param  int            $page
+     * @param  int            $perPage
      * @return ZohoBeanInterface[]
      * @throws ZohoCRMORMException
      * @throws \ZCRMException
@@ -144,21 +156,21 @@ abstract class AbstractZohoDao
                 throw $exception;
             }
         }
-
         return $this->getBeansFromZCRMRecords($ZCRMRecords);
     }
 
     /**
      * Returns the list of deleted records.
-     * @param \DateTimeInterface|null $lastModifiedTime
-     * @param int $page
-     * @param int $perPage
+     *
+     * @param  \DateTimeInterface|null $lastModifiedTime
+     * @param  int                     $page
+     * @param  int                     $perPage
      * @return \ZCRMTrashRecord[]
      * @throws \ZCRMException
      */
     public function getDeletedRecordIds(\DateTimeInterface $lastModifiedTime = null, $page = 1, $perPage = 200)
     {
-        return ZCRMModuleHelper::getAllZCRMTrashRecordsFromPagination($this->zohoClient, $this->getModule(),'all', $lastModifiedTime, $page ,$perPage);
+        return ZCRMModuleHelper::getAllZCRMTrashRecordsFromPagination($this->zohoClient, $this->getModule(), 'all', $lastModifiedTime, $page, $perPage);
     }
 
     /**
@@ -171,8 +183,9 @@ abstract class AbstractZohoDao
 
     /**
      * Implements insertRecords or updateRecords or upsertRecords API method.
-     * @param ZohoBeanInterface[] $beans
-     * @param bool $wfTrigger Whether or not the call should trigger the workflows related to a "created" event
+     *
+     * @param  ZohoBeanInterface[] $beans
+     * @param  bool                $wfTrigger Whether or not the call should trigger the workflows related to a "created" event
      * @throws ZohoCRMORMException
      */
     public function createOrUpdate( array $beans, bool $wfTrigger = false, $action = 'upsert'): void
@@ -189,24 +202,26 @@ abstract class AbstractZohoDao
             /**
              * @var $beansPool ZohoBeanInterface[]
              */
-            $recordsToMerge = array_map(function ($beanPool) use ($dao){
-                /**
-                 * @var $beanPool ZohoBeanInterface
-                 */
-                BeanHelper::createOrUpdateBeanToZCRMRecord($dao, $beanPool);
-                return $beanPool->getZCRMRecord();
-            }, $beansPool);
+            $recordsToMerge = array_map(
+                function ($beanPool) use ($dao) {
+                    /**
+                     * @var $beanPool ZohoBeanInterface
+                     */
+                    BeanHelper::createOrUpdateBeanToZCRMRecord($dao, $beanPool);
+                    return $beanPool->getZCRMRecord();
+                }, $beansPool
+            );
             $records = array_merge($records, $recordsToMerge);
             switch ($action){
-                case 'insert':
-                     $this->zohoClient->insertRecords($this->getModule(),$records, $wfTrigger);
-                    break;
-                case 'update':
-                    $this->zohoClient->updateRecords($this->getModule(),$records, $wfTrigger);
-                    break;
-                case 'upsert':
-                default:
-                    $this->zohoClient->upsertRecords($this->getModule(), $records);
+            case 'insert':
+                 $this->zohoClient->insertRecords($this->getModule(), $records, $wfTrigger);
+                break;
+            case 'update':
+                $this->zohoClient->updateRecords($this->getModule(), $records, $wfTrigger);
+                break;
+            case 'upsert':
+            default:
+                $this->zohoClient->upsertRecords($this->getModule(), $records);
             }
         }
         if (count($records) != count($beans)) {
@@ -220,8 +235,9 @@ abstract class AbstractZohoDao
 
     /**
      * Implements insertRecords API method.
-     * @param ZohoBeanInterface[] $beans
-     * @param bool $wfTrigger Whether or not the call should trigger the workflows related to a "created" event
+     *
+     * @param  ZohoBeanInterface[] $beans
+     * @param  bool                $wfTrigger Whether or not the call should trigger the workflows related to a "created" event
      * @throws ZohoCRMORMException
      */
     public function insertRecords( array $beans, bool $wfTrigger = false): void
@@ -232,8 +248,8 @@ abstract class AbstractZohoDao
     /**
      * Implements updateRecords API method.
      *
-     * @param ZohoBeanInterface[] $beans
-     * @param bool $wfTrigger
+     * @param  ZohoBeanInterface[] $beans
+     * @param  bool                $wfTrigger
      * @throws ZohoCRMORMException
      */
     public function updateRecords(array $beans, bool $wfTrigger = false): void
@@ -245,8 +261,9 @@ abstract class AbstractZohoDao
      * Saves the bean or array of beans passed in Zoho.
      * It will perform an insert if the bean has no ZohoID or an update if the bean has a ZohoID.
      * wfTrigger only usable for a single record update/insert.
-     * @param  ZohoBeanInterface[] $beans A bean or an array of beans.
-     * @param bool $wfTrigger
+     *
+     * @param ZohoBeanInterface|ZohoBeanInterface[] $beans     A bean or an array of beans.
+     * @param bool                                  $wfTrigger
      */
     public function save($beans, $wfTrigger = false): void
     {
@@ -278,8 +295,9 @@ abstract class AbstractZohoDao
      * @return ZohoBeanInterface
      * @throws ZohoCRMORMException
      */
-    public function create(){
-        $record = \ZCRMRecord::getInstance($this->getModule(),null);
+    public function create()
+    {
+        $record = \ZCRMRecord::getInstance($this->getModule(), null);
         $beanClassName = $this->getBeanClassName();
         $bean = new $beanClassName();
         BeanHelper::updateZCRMRecordToBean($this, $bean, $record);
@@ -287,17 +305,22 @@ abstract class AbstractZohoDao
     }
 
     /**
-     * @param $fieldName
+     * @param  $fieldName
      * @return null|Field
      */
-    public function getFieldFromFieldName($fieldName){
+    public function getFieldFromFieldName($fieldName)
+    {
         $fields = $this->getFields();
         /**
          * @var Field[] $field
          */
-        $field = array_values(array_filter($fields, function (Field $fiedObj) use ($fieldName){
-            return $fiedObj->getName() === $fieldName;
-        }));
+        $field = array_values(
+            array_filter(
+                $fields, function (Field $fiedObj) use ($fieldName) {
+                    return $fiedObj->getName() === $fieldName;
+                }
+            )
+        );
 
         return count($field) === 1?$field[0] :null;
     }

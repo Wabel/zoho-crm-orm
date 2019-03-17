@@ -27,7 +27,7 @@ A small bit of code is better than a long phrase, here you go with a sample:
 use \Wabel\Zoho\CRM\ZohoClient;
 
 // The ZohoClient class is the low level class used to access Zoho.
-$zohoClient = new ZohoClient($zohoAuthToken);
+$zohoClient = new ZohoClient($configuration, 'Europe/Paris');
 
 // Use the "DAO" class to write to some module of Zoho.
 // Each module (even custom ones) has its own class.
@@ -41,12 +41,15 @@ $contact->setFirstName("John");
 // Use the "save" method to save the bean.
 $contactDao->save($contact);
 
-// Use the "searchRecords" method to fetch data from Zoho.
+// Use the "searchRecords" method to fetch data from Zoho. 
 $records = $contactDao->searchRecords("(Last Name:FooBar)");
 foreach ($records as $record) {
     // Each record is a "Contact" object.
     echo $record->getLastName();
 }
+
+// Get Records from the dao
+$contactDao->getRecords()
 ```
 
 What you must always remember:
@@ -85,8 +88,22 @@ Out of the box, the client will point to the `https://crm.zoho.com/crm/private` 
 If your endpoint is different (some users are pointing to `https://crm.zoho.eu/crm/private`), you can
 use the third parameter of the `Client` constructor:
 
+
 ```php
-$zohoClient = new ZohoClient($zohoAuthToken, null, 'https://crm.zoho.eu/crm/private');
+$zohoClient = new ZohoClient([
+    'client_id' => 'xxxxxxxxxxxxxxxxxxxxxx',
+     'client_secret' => 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    'redirect_uri' => 'http://xxxxxxxxx.com/bakcxxxx',
+    'currentUserEmail' => 'xxxxx@test.fr',
+    'applicationLogFilePath' => '/xxx/xxx/',
+    'sandbox' => true or false,
+    'apiBaseUrl' => '',
+    'apiVersion' => '',
+    'access_type' => '',
+    'accounts_url' => '',
+    'persistence_handler_class' => '',
+    'token_persistence_path' => ''
+], 'Europe/Paris);
 ```  
 
 
@@ -94,15 +111,27 @@ Setting up unit tests
 ---------------------
 
 Interested in contributing? You can easily set up the unit tests environment:
-
+Read how to change the client configuration - read [Configuration](https://github.com/zoho/zcrm-php-sdk)
 - copy the `phpunit.xml.dist` file into `phpunit.xml`
-- change the stored `auth_token`
-- run the tests: `vendor/bin/phpunit`
+- change the stored environment variable `client_secret`
+- change the stored environment variable `redirect_uri`
+- change the stored environment variable `currentUserEmail`
+- change the stored environment variable `applicationLogFilePath`
+- change the stored environment variable `persistence_handler_class`
+- change the stored environment variable `token_persistence_path`
+- change the stored environment variable `userid_test`
+- change the stored environment variable `timeZone`
+- change the stored environment variable `custom_module_singular_name`
+- change the stored environment variable `custom_module_mandatory_field_name`
+- change the stored environment variable `custom_module_picklist_field_name`
+- change the stored environment variable `custom_module_picklist_field_value1`
+- change the stored environment variable `custom_module_picklist_field_value2`
+- change the stored environment variable `custom_module_date_field_name`
+- change the stored environment variable `custom_module_text_field_name`
 
 
-Troubleshooting
+
+TODO
 ---------------
 
-- I'm saving a bean (using the `save` method of the DAO) and searching for it afterwards (using `searchRecords`). The bean is not returned.  
-  This is a Zoho issue. Zoho takes about one minute to index the records you insert. So you must wait about one minute
-  before the Zoho bean you saved will be findable using the `searchRecords` method.
+Implement searchRecords()
