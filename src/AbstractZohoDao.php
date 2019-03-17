@@ -3,6 +3,7 @@
 namespace Wabel\Zoho\CRM;
 
 use Wabel\Zoho\CRM\BeanComponents\Field;
+use Wabel\Zoho\CRM\Exceptions\ExceptionZohoClient;
 use Wabel\Zoho\CRM\Exceptions\ZohoCRMORMException;
 use Wabel\Zoho\CRM\Helpers\BeanHelper;
 use Wabel\Zoho\CRM\Helpers\ComponentHelper;
@@ -132,8 +133,18 @@ abstract class AbstractZohoDao
      */
     public function getRecords($cvId = null, $sortColumnString = null, $sortOrderString = null, \DateTime $lastModifiedTime = null, $page = 1, $perPage = 200): array
     {
-        $ZCRMRecords =  ZCRMModuleHelper::getAllZCRMRecordsFromPagination($this->zohoClient, $this->getModule(),
-            $cvId, $sortColumnString, $sortOrderString, $page, $perPage, $lastModifiedTime);
+        try{
+            $ZCRMRecords =  ZCRMModuleHelper::getAllZCRMRecordsFromPagination($this->zohoClient, $this->getModule(),
+                $cvId, $sortColumnString, $sortOrderString, $page, $perPage, $lastModifiedTime);
+        } catch(\ZCRMException $exception){
+            if(ExceptionZohoClient::exceptionCodeFormat($exception->getExceptionCode()) === ExceptionZohoClient::EXCEPTION_CODE_NO__CONTENT) {
+                $ZCRMRecords = [];
+            } else{
+                $this->zohoClient->logException($exception);
+                throw $exception;
+            }
+        }
+
         return $this->getBeansFromZCRMRecords($ZCRMRecords);
     }
 
