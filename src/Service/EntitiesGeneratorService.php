@@ -62,8 +62,8 @@ class EntitiesGeneratorService
             if($module->isApiSupported()) {
                 try {
                     $module = $this->generateModule(
-                        $module->getAPIName(), $module->getPluralLabel(),
-                        $module->getSingularLabel(), $targetDirectory, $namespace
+                        $module->getAPIName(), $module->getAPIName(),
+                        substr($module->getAPIName(), 0, -1), $targetDirectory, $namespace
                     );
                     if($module) {
                         $zohoModules[] = $module;
