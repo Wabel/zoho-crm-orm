@@ -5,6 +5,8 @@ namespace Wabel\Zoho\CRM;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Wabel\Zoho\CRM\Service\EntitiesGeneratorService;
+use zcrmsdk\crm\crud\ZCRMTrashRecord;
+use zcrmsdk\crm\exception\ZCRMException;
 
 class ZohoDaoTest extends TestCase
 {
@@ -72,7 +74,7 @@ class ZohoDaoTest extends TestCase
      */
     public function testGetZCRMModule(AbstractZohoDao $accountZohoDao)
     {
-        $this->assertInstanceOf('\ZCRMModule', $accountZohoDao->getZCRMModule());
+        $this->assertInstanceOf('zcrmsdk\crm\crud\ZCRMModule', $accountZohoDao->getZCRMModule());
         $this->assertEquals('Accounts', $accountZohoDao->getZCRMModule()->getAPIName());
     }
 
@@ -237,7 +239,7 @@ class ZohoDaoTest extends TestCase
     /**
      * @depends testDeleteById
      * @param   ZohoBeanInterface $beanDeleted
-     * @throws  \ZCRMException
+     * @throws  ZCRMException
      */
     public function testGetDeletedRecords(ZohoBeanInterface $beanDeleted)
     {
@@ -250,7 +252,7 @@ class ZohoDaoTest extends TestCase
         $trashRecords = $accountZohoDao->getDeletedRecordIds($dateRecentRecords);
         $this->assertNotEmpty($trashRecords);
         $idsRecordTrash = array_map(
-            function (\ZCRMTrashRecord $trashRecord) {
+            function (ZCRMTrashRecord $trashRecord) {
                 return $trashRecord->getEntityId();
             }, $trashRecords
         );

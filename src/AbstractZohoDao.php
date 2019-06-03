@@ -8,6 +8,9 @@ use Wabel\Zoho\CRM\Exceptions\ZohoCRMORMException;
 use Wabel\Zoho\CRM\Helpers\BeanHelper;
 use Wabel\Zoho\CRM\Helpers\ComponentHelper;
 use Wabel\Zoho\CRM\Helpers\ZCRMModuleHelper;
+use zcrmsdk\crm\crud\ZCRMRecord;
+use zcrmsdk\crm\crud\ZCRMModule;
+use zcrmsdk\crm\api\response\EntityResponse;
 
 /**
  * Base class that provides access to Zoho through Zoho beans.
@@ -58,7 +61,7 @@ abstract class AbstractZohoDao
     /**
      * Returns a module from Zoho.
      *
-     * @return \ZCRMModule
+     * @return ZCRMModule
      */
     public function getZCRMModule()
     {
@@ -68,7 +71,7 @@ abstract class AbstractZohoDao
     /**
      * Parse a Zoho Response in order to retrieve one or several ZohoBeans from it.
      *
-     * @param  \ZCRMRecord[] $ZCRMRecords
+     * @param  ZCRMRecord[] $ZCRMRecords
      * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
      * @throws ZohoCRMORMException
      */
@@ -100,12 +103,12 @@ abstract class AbstractZohoDao
     public function delete($id): array
     {
         /***
-         * @var $ZCRMRecordDeleted \EntityResponse[]
+         * @var $ZCRMRecordDeleted EntityResponse[]
          */
         $ZCRMRecordsDeleted = $this->zohoClient->deleteRecords($this->getModule(), $id);
 
         $recordsToDeleted = array_map(
-            function (\EntityResponse $ZCRMRecordDeleted) {
+            function (EntityResponse $ZCRMRecordDeleted) {
                 return $ZCRMRecordDeleted->getData();
             }, $ZCRMRecordsDeleted
         );
@@ -191,7 +194,7 @@ abstract class AbstractZohoDao
     public function createOrUpdate( array $beans, bool $wfTrigger = false, $action = 'upsert'): void
     {
         /**
-         * @var $records \ZCRMRecord[]
+         * @var $records ZCRMRecord[]
          */
         $records = [];
 
@@ -297,7 +300,7 @@ abstract class AbstractZohoDao
      */
     public function create()
     {
-        $record = \ZCRMRecord::getInstance($this->getModule(), null);
+        $record = ZCRMRecord::getInstance($this->getModule(), null);
         $beanClassName = $this->getBeanClassName();
         $bean = new $beanClassName();
         BeanHelper::updateZCRMRecordToBean($this, $bean, $record);

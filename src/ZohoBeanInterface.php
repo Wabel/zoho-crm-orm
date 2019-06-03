@@ -136,16 +136,16 @@ interface ZohoBeanInterface
     /**
      * Returns the wrapped Zoho CRM Record .
      *
-     * @return \ZCRMRecord
+     * @return \zcrmsdk\crm\crud\ZCRMRecord
      */
     public function getZCRMRecord();
 
     /**
      * Sets the Zoho CRM Record for wrapping in the zohoBean Object.
      *
-     * @param \ZCRMRecord $record
+     * @param \zcrmsdk\crm\crud\ZCRMRecord $record
      */
-    public function setZCRMRecord(\ZCRMRecord $record);
+    public function setZCRMRecord(\zcrmsdk\crm\crud\ZCRMRecord $record);
 
     /**
      * Returns whether a property is changed or not.

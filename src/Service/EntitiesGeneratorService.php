@@ -10,6 +10,10 @@ use gossi\codegen\model\PhpProperty;
 use Psr\Log\LoggerInterface;
 use Wabel\Zoho\CRM\Exceptions\ZohoCRMORMException;
 use Wabel\Zoho\CRM\ZohoClient;
+use zcrmsdk\crm\crud\ZCRMModule;
+use zcrmsdk\crm\crud\ZCRMPickListValue;
+use zcrmsdk\crm\crud\ZCRMField;
+
 
 /**
  * This class is in charge of generating Zoho entities.
@@ -50,7 +54,7 @@ class EntitiesGeneratorService
     public function generateAll($targetDirectory, $namespace)
     {
         /**
-         * @var $modules \ZCRMModule[]
+         * @var $modules ZCRMModule[]
          */
         $modules = $this->zohoClient->getModules();
         $zohoModules = [];
@@ -119,7 +123,7 @@ class EntitiesGeneratorService
     }
 
     /**
-     * @param  \ZCRMField[] $ZCRMfields
+     * @param  ZCRMField[] $ZCRMfields
      * @param  string       $namespace
      * @param  string       $className
      * @param  string       $moduleName
@@ -245,7 +249,7 @@ class EntitiesGeneratorService
         self::registerProperty($class, 'modifiedByOwnerName', "The user id who modified the entity in Zoho\nType: string\n", 'string');
         self::registerProperty($class, 'ownerOwnerID', "Owner ID in Zoho: string\n", 'string');
         self::registerProperty($class, 'ownerOwnerName', "Owner Name in Zoho: string\n", 'string');
-        self::registerProperty($class, 'ZCRMRecord', "The Wrapped Zoho CRM Record\nType: ZCRMRecord\n", '\\ZCRMRecord');
+        self::registerProperty($class, 'ZCRMRecord', "The Wrapped Zoho CRM Record\nType: ZCRMRecord\n", '\\zcrmsdk\\crm\\crud\\ZCRMRecord');
         $methodIsDirty = PhpMethod::create('isDirty');
         $methodIsDirty->setDescription('Returns whether a property is changed or not.');
         $methodIsDirty->addParameter(PhpParameter::create('name'));
@@ -273,13 +277,13 @@ class EntitiesGeneratorService
     }
 
     /**
-     * @param  \ZCRMPickListValue[] $pickListFieldValues
+     * @param  ZCRMPickListValue[] $pickListFieldValues
      * @return array
      */
     public static function ZCRMPickListValueListToArray(array $pickListFieldValues)
     {
         return array_map(
-            function (\ZCRMPickListValue $pickListValue) {
+            function (ZCRMPickListValue $pickListValue) {
                 return [
                 'displayValue' => $pickListValue->getDisplayValue(),
                 'sequenceNumber' => $pickListValue->getSequenceNumber(),
@@ -290,7 +294,7 @@ class EntitiesGeneratorService
         );
     }
     /**
-     * @param  \ZCRMField[] $ZCRMfields
+     * @param  ZCRMField[] $ZCRMfields
      * @param  string       $namespace
      * @param  string       $className
      * @param  string       $daoClassName

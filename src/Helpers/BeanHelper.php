@@ -8,6 +8,8 @@ use Wabel\Zoho\CRM\AbstractZohoDao;
 use Wabel\Zoho\CRM\Exceptions\ZohoCRMORMException;
 use Wabel\Zoho\CRM\Service\EntitiesGeneratorService;
 use Wabel\Zoho\CRM\ZohoBeanInterface;
+use zcrmsdk\crm\crud\ZCRMRecord;
+use zcrmsdk\crm\setup\users\ZCRMUser;
 
 class BeanHelper
 {
@@ -19,7 +21,7 @@ class BeanHelper
     public static function createOrUpdateBeanToZCRMRecord(AbstractZohoDao $dao, ZohoBeanInterface $bean)
     {
 
-        $record = \ZCRMRecord::getInstance($dao->getModule(), $bean->getZohoId());
+        $record = ZCRMRecord::getInstance($dao->getModule(), $bean->getZohoId());
         $bean->setZCRMRecord($record);
         foreach ($dao->getFields() as $field){
             if(($field->isSystem() && $field->getApiName() !== 'Owner') || in_array($field->getName(), EntitiesGeneratorService::$defaultORMSystemFields) || !$bean->isDirty($field->getName())) {
@@ -48,14 +50,14 @@ class BeanHelper
                 break;
             case 'lookup':
                 /**
-                 * @var $ZCRMRecord \ZCRMRecord
+                 * @var $ZCRMRecord ZCRMRecord
                  */
-                $ZCRMRecord = \ZCRMRecord::getInstance($field->getLookupModuleName(), $bean->{$getter}());
+                $ZCRMRecord = ZCRMRecord::getInstance($field->getLookupModuleName(), $bean->{$getter}());
                 $bean->getZCRMRecord()->setFieldValue($field->getApiName(), $ZCRMRecord);
                 break;
             case 'ownerlookup':
                 if($bean->{$getter}()) {
-                    $bean->getZCRMRecord()->setOwner(\ZCRMUser::getInstance($bean->{$getter}(), $bean->getOwnerOwnerName()));
+                    $bean->getZCRMRecord()->setOwner(ZCRMUser::getInstance($bean->{$getter}(), $bean->getOwnerOwnerName()));
                 }
                 break;
             case 'multiselectpicklist':
@@ -75,10 +77,10 @@ class BeanHelper
     /**
      * @param  AbstractZohoDao   $dao
      * @param  ZohoBeanInterface $bean
-     * @param  \ZCRMRecord       $record
+     * @param  ZCRMRecord       $record
      * @throws ZohoCRMORMException
      */
-    public static function updateZCRMRecordToBean(AbstractZohoDao $dao, ZohoBeanInterface $bean, \ZCRMRecord $record)
+    public static function updateZCRMRecordToBean(AbstractZohoDao $dao, ZohoBeanInterface $bean, ZCRMRecord $record)
     {
         $bean->setZCRMRecord($record);
         $id = $record->getEntityId();
@@ -123,7 +125,7 @@ class BeanHelper
                 case 'userlookup':
                 case 'lookup':
                     /**
-                     * @var $ZCRMRecord \ZCRMRecord
+                     * @var $ZCRMRecord ZCRMRecord
                      */
                     $ZCRMRecord = $value;
                     $value = $ZCRMRecord? (is_a($ZCRMRecord, 'ZCRMRecord') ? $ZCRMRecord->getEntityId() : $ZCRMRecord):null;
