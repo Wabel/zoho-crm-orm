@@ -45,6 +45,8 @@
         <!--<env name="custom_module_singular_name" value=""/>-->
         <!--<env name="custom_module_mandatory_field_name" value=""/>-->
         <!--<env name="custom_module_picklist_field_name" value=""/>-->
+        <!--<env name="custom_module_picklist_field_value1" value="Option 1"/>-->
+        <!--<env name="custom_module_picklist_field_value2" value="Option 2"/>-->
         <!--<env name="custom_module_date_field_name" value=""/>-->
         <!--<env name="custom_module_text_field_name" value=""/>-->
     </php>
