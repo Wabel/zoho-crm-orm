@@ -38,6 +38,7 @@
         <!--<env name="persistence_handler_class" value=""/>-->
         <!--<env name="token_persistence_path" value=""/>-->
         <!--<env name="userid_test" value=""/>-->
+        <!--<env name="sandbox" value="true"/>-->
         <!--<env name="timeZone" value=""/>-->
         <!--<env name="deal_status" value=""/>-->
         <!--<env name="campaign_type" value=""/>-->
