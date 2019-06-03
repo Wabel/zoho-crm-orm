@@ -29,7 +29,7 @@ class EntitiesGeneratorServiceTest extends TestCase
                 'applicationLogFilePath' => getenv('applicationLogFilePath'),
                 'persistence_handler_class' => getenv('persistence_handler_class'),
                 'token_persistence_path' => getenv('token_persistence_path'),
-                'sandbox' => getenv('sandbox') !== false ? getenv('sandbox') : 'true',
+                'sandbox' => getenv('sandbox') !== false ? getenv('sandbox') === 0 ? 'false' : 'true' : 'true',
             ],
             getenv('timeZone')
         );
