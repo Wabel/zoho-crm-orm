@@ -30,11 +30,11 @@ abstract class AbstractZohoDao
         $this->zohoClient = $zohoClient;
     }
 
-    abstract protected function getModule();
-    abstract protected function getSingularModuleName();
-    abstract protected function getPluralModuleName();
-    abstract protected function getBeanClassName();
-    abstract protected function getFieldsDetails();
+    abstract public function getModule();
+    abstract public function getSingularModuleName();
+    abstract public function getPluralModuleName();
+    abstract public function getBeanClassName();
+    abstract public function getFieldsDetails();
 
     /**
      * @return ZohoClient
