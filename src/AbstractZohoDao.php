@@ -25,6 +25,13 @@ abstract class AbstractZohoDao
      */
     protected $zohoClient;
 
+    /**
+     * Wether or not to log Zoho Api Reponses
+     *
+     * @var bool
+     */
+    protected $logResponses = false;
+
     public function __construct(ZohoClient $zohoClient)
     {
         $this->zohoClient = $zohoClient;
@@ -35,6 +42,20 @@ abstract class AbstractZohoDao
     abstract public function getPluralModuleName();
     abstract public function getBeanClassName();
     abstract public function getFieldsDetails();
+
+    /**
+     * @return bool
+     */
+    public function isLogResponses(): bool {
+        return $this->logResponses;
+    }
+
+    /**
+     * @param bool $logResponses
+     */
+    public function setLogResponses( bool $logResponses ): void {
+        $this->logResponses = $logResponses;
+    }
 
     /**
      * @return ZohoClient
@@ -234,6 +255,11 @@ abstract class AbstractZohoDao
             default:
                 $responses = $this->zohoClient->upsertRecords($this->getModule(), $records);
             }
+        }
+        if ($this->isLogResponses()) {
+          foreach ( $responses as $response ) {
+            $this->getZohoClient()->getLogger()->debug( json_encode( $response->getResponseJSON(), JSON_PRETTY_PRINT ) );
+          }
         }
         if (count($records) != count($beans)) {
             throw new ZohoCRMORMException('Error while '.$processAction.' beans in Zoho. '.count($beans).' passed in parameter, but '.count($records).' returned.');
