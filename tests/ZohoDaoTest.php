@@ -420,12 +420,12 @@ class ZohoDaoTest extends TestCase
 
         $this->assertEquals($beans[0]->{$fieldMandatoryRecordName->getGetter()}(), $record0->getFieldValue($fieldMandatoryRecordName->getApiName()));
         $this->assertEquals($beans[0]->{$fieldPickList->getGetter()}(), $record0->getFieldValue($fieldPickList->getApiName()));
-        $this->assertEquals($beans[0]->{$fieldDate->getGetter()}()->format('Y-m-d'), $record0->getFieldValue($fieldDate->getApiName()));
+        $this->assertEquals($beans[0]->{$fieldDate->getGetter()}()->format('Y-m-d'), date('Y-m-d', strtotime($record0->getFieldValue($fieldDate->getApiName()))));
         $this->assertEquals($beans[0]->{$fieldText->getGetter()}(), $record0->getFieldValue($fieldText->getApiName()));
 
         $this->assertEquals($beans[1]->{$fieldMandatoryRecordName->getGetter()}(), $record1->getFieldValue($fieldMandatoryRecordName->getApiName()));
         $this->assertEquals($beans[1]->{$fieldPickList->getGetter()}(), $record1->getFieldValue($fieldPickList->getApiName()));
-        $this->assertEquals($beans[1]->{$fieldDate->getGetter()}()->format('Y-m-d'), $record1->getFieldValue($fieldDate->getApiName()));
+        $this->assertEquals($beans[1]->{$fieldDate->getGetter()}()->format('Y-m-d'), date('Y-m-d', strtotime($record1->getFieldValue($fieldDate->getApiName()))));
 
     }
 
