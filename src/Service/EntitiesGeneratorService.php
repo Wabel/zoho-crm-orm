@@ -57,16 +57,21 @@ class EntitiesGeneratorService
          * @var $modules ZCRMModule[]
          */
         $modules = $this->zohoClient->getModules();
+        $this->logger->debug(sprintf('%d modules received', count($modules)));
         $zohoModules = [];
         foreach ($modules as $module) {
-            if($module->isApiSupported()) {
+            $this->logger->debug(sprintf('Generating module %s', $module->getAPIName()));
+            if ($module->isApiSupported()) {
                 try {
-                    $module = $this->generateModule(
+                    $generatedModule = $this->generateModule(
                         $module->getAPIName(), $module->getAPIName(),
                         substr($module->getAPIName(), 0, -1), $targetDirectory, $namespace
                     );
-                    if($module) {
-                        $zohoModules[] = $module;
+                    if ($generatedModule) {
+                        $zohoModules[] = $generatedModule;
+                        $this->logger->info(sprintf('Module %s has been generated.', $module->getAPIName()));
+                    } else {
+                        $this->logger->warning(sprintf('Module %s could not be generated.', $module->getAPIName()));
                     }
                 } catch (ZohoCRMORMException $e) {
                     $this->logger->notice(
@@ -78,6 +83,8 @@ class EntitiesGeneratorService
                         ]
                     );
                 }
+            } else {
+                $this->logger->debug(sprintf('Module %s does not support API. Generation skipped.', $module->getAPIName()));
             }
         }
 
