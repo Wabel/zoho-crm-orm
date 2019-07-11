@@ -170,11 +170,7 @@ class EntitiesGeneratorService
                 break;
             case 'bigint':
             case 'integer':
-                $phpType = 'int';
-                break;
             case 'autonumber':
-            case 'bigint':
-            case 'integer':
                 $phpType = 'int';
                 break;
             case 'currency':
@@ -340,11 +336,7 @@ class EntitiesGeneratorService
                 break;
             case 'bigint':
             case 'integer':
-                $phpType = 'int';
-                break;
             case 'autonumber':
-            case 'bigint':
-            case 'integer':
                 $phpType = 'int';
                 break;
             case 'currency':
