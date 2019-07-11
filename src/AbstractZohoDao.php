@@ -75,7 +75,7 @@ abstract class AbstractZohoDao
      * @return ZohoBeanInterface[] The array of Zoho Beans parsed from the response
      * @throws ZohoCRMORMException
      */
-    protected function getBeansFromZCRMRecords(array $ZCRMRecords)
+    public function getBeansFromZCRMRecords(array $ZCRMRecords)
     {
         $beanClass = $this->getBeanClassName();
         $beanArray = array();
