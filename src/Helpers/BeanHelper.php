@@ -72,6 +72,11 @@ class BeanHelper
                 break;
             }
         }
+
+        // Add support for fields that can't be managed with ORM
+        foreach ($dao->getUnamanagedFields() as $field => $value) {
+            $bean->getZCRMRecord()->setFieldValue($field, $value);
+        }
     }
 
     /**

@@ -32,6 +32,15 @@ abstract class AbstractZohoDao
      */
     protected $logResponses = false;
 
+
+    /**
+     * Array that contains fields that can't be managed
+     * with the ORM and are manually added with the
+     * addUnmanagedField method
+     * @var array
+     */
+    protected $unmanagedFields =  [];
+
     public function __construct(ZohoClient $zohoClient)
     {
         $this->zohoClient = $zohoClient;
@@ -380,5 +389,23 @@ abstract class AbstractZohoDao
         );
 
         return count($field) === 1?$field[0] :null;
+    }
+
+
+    /**
+     * Add a field that can't be managed with the ORM
+     *
+     * @param $fieldApiName
+     * @param $value
+     */
+    public function addUnmanagedField($fieldApiName, $value) {
+        $this->unmanagedFields[$fieldApiName] = $value;
+    }
+
+    /**
+     * @return array
+     */
+    public function getUnamanagedFields() {
+        return $this->unmanagedFields;
     }
 }
