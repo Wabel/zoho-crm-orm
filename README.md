@@ -130,6 +130,14 @@ Read how to change the client configuration - read [Configuration](https://githu
 - change the stored environment variable `custom_module_text_field_name`
 
 
+Version 2.2
+---------------
+This version is a Work in Progress.  
+We will try to not break BC in this version with the 2.1.
+
+Basically, in the v2 of the Zoho API, when we get the list of fields, we retrieve a `jsonobject` for the lookup fields (`ownerlookup`, `userlookup`, `lookup`, etc.).  
+In the 2.1, we only generate the Id of those objects, the 2.2 will also generate the name of the linked object. 
+
 
 TODO
 ---------------
