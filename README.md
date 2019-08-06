@@ -7,6 +7,17 @@ Wabel's Zoho-CRM ORM
 
 Heavily forked from [mctekk's work](https://github.com/mctekk/zohocrm)
 
+Version 2.2
+---------------  
+Note: As we do our best to not break BC with version 2.1, please check your application after using the 2.2.
+
+Basically, in the v2 of the Zoho API, when we get the list of fields, we retrieve a `jsonobject` for the lookup fields (`ownerlookup`, `userlookup`, `lookup`, etc.).  
+In the 2.1, we only generate the Id of those objects, the 2.2 will also generate the name of the linked object.
+
+Ex: You create a field `ParentAccount` in the Module `Accounts`, then, instead of having only `get/setParentAccountID()`, we also generate `get/setParentAccountName()`.  
+The records fetched from Zoho will also be populated in the right methods (`id/name`).
+
+
 What is this?
 -------------
 
@@ -128,16 +139,6 @@ Read how to change the client configuration - read [Configuration](https://githu
 - change the stored environment variable `custom_module_picklist_field_value2`
 - change the stored environment variable `custom_module_date_field_name`
 - change the stored environment variable `custom_module_text_field_name`
-
-
-Version 2.2
----------------
-This version is a Work in Progress.  
-We will try to not break BC in this version with the 2.1.
-
-Basically, in the v2 of the Zoho API, when we get the list of fields, we retrieve a `jsonobject` for the lookup fields (`ownerlookup`, `userlookup`, `lookup`, etc.).  
-In the 2.1, we only generate the Id of those objects, the 2.2 will also generate the name of the linked object. 
-
 
 TODO
 ---------------
