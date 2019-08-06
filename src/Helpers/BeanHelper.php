@@ -129,19 +129,39 @@ class BeanHelper
                     break;
                 case 'userlookup':
                 case 'lookup':
-                    /**
-                     * @var $ZCRMRecord ZCRMRecord
-                     */
-                    $ZCRMRecord = $value;
-                    $value = $ZCRMRecord? (is_a($ZCRMRecord, 'ZCRMRecord') ? $ZCRMRecord->getEntityId() : $ZCRMRecord):null;
+                    if ($value) {
+                        if (is_a($value, 'zcrmsdk\crm\crud\ZCRMRecord')) {
+                            /**
+                             * @var $ZCRMRecord ZCRMRecord
+                             */
+                            $ZCRMRecord = $value;
+                            if (UtilsHelper::endsWith($field->getName(), 'ID')) {
+                                $value = $ZCRMRecord->getEntityId();
+                            } else {
+                                $value = $ZCRMRecord->getLookupLabel();
+                            }
+                        }
+                    } else {
+                        $value = null;
+                    }
                     break;
 
                 case 'ownerlookup':
-                    /**
-                     * @var $ZCRMUser \ZCRMUser
-                     */
-                    $ZCRMUser = $value;
-                    $value = $ZCRMUser?$ZCRMUser->getId():null;
+                    if ($value) {
+                        if (is_a($value, 'zcrmsdk\crm\setup\users\ZCRMUser')) {
+                            /**
+                             * @var $ZCRMUser ZCRMUser
+                             */
+                            $ZCRMUser = $value;
+                            if (UtilsHelper::endsWith($field->getName(), 'ID')) {
+                                $value = $ZCRMUser->getId();
+                            } else {
+                                $value = $ZCRMUser->getFullName();
+                            }
+                        }
+                    } else {
+                        $value = null;
+                    }
                     break;
                 default:
                     break;
