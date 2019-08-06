@@ -152,6 +152,10 @@ class EntitiesGeneratorService
             $label = $ZCRMfield->getFieldLabel();
             $customfield = $ZCRMfield->isCustomField();
             $nullable = false;
+
+            $isLookup = false;
+            $lookupName = null;
+
             switch ($type) {
             case 'datetime':
             case 'date':
@@ -189,6 +193,8 @@ class EntitiesGeneratorService
                 $phpType = 'string';
                 break;
             case 'lookup':
+                $isLookup = true;
+                $lookupName = self::camelCase($name.'_Name');
                 $name = self::camelCase($name.'_ID');
                 $phpType = 'string';
                 break;
@@ -235,6 +241,18 @@ class EntitiesGeneratorService
                 'Max length: '.$maxlength."\n".
                 'Custom field: '.($customfield ? 'true' : 'false')."\n", $phpType, $nullable
             );
+
+            // For lookup fields, we want to generate both ID and Name fields
+            if ($isLookup) {
+                self::registerProperty(
+                    $class, $lookupName, 'Zoho field '.$label." (Name)\n".
+                    'Field API Name: '.$apiName."\n".
+                    'Type: '.$type."\n".
+                    'Read only: '.($isreadonly ? 'true' : 'false')."\n".
+                    'Max length: '.$maxlength."\n".
+                    'Custom field: '.($customfield ? 'true' : 'false')."\n", $phpType, $nullable
+                );
+            }
         }
 
         /**
@@ -323,6 +341,9 @@ class EntitiesGeneratorService
                 $system = true;
             }
 
+            $isLookup = false;
+            $lookupName = null;
+
             switch ($type) {
             case 'datetime':
             case 'date':
@@ -355,10 +376,14 @@ class EntitiesGeneratorService
                 $phpType = 'string';
                 break;
             case 'ownerlookup':
+                $isLookup = true;
+                $lookupName = self::camelCase($name.'_OwnerName');
                 $name = self::camelCase($name.'_OwnerID');
                 $phpType = 'string';
                 break;
             case 'lookup':
+                $isLookup = true;
+                $lookupName = self::camelCase($name.'_Name');
                 $name = self::camelCase($name.'_ID');
                 $phpType = 'string';
                 $lookupModuleName = $ZCRMfield->getLookupField() ? $ZCRMfield->getLookupField()->getModule():null;
@@ -367,6 +392,8 @@ class EntitiesGeneratorService
                 continue 2;
                     break;
             case 'userlookup':
+                $isLookup = true;
+                $lookupName = self::camelCase($name.'_UserName');
                 $name = self::camelCase($name.'_UserID');
                 $phpType = 'string';
                 break;
@@ -402,6 +429,25 @@ class EntitiesGeneratorService
             $fields[$name]['dv']  = $ZCRMfield->getDefaultValue();
             $fields[$name]['system'] = $system;
             $fields[$name]['lookupModuleName'] = $lookupModuleName;
+
+            // For lookup fields, we want to generate both ID and Name fields
+            if ($isLookup) {
+                $name = $lookupName;
+                $fields[$name]['phpType'] = $phpType;
+                $fields[$name]['getter'] = 'get'.ucfirst(self::camelCase($name));
+                $fields[$name]['setter'] = 'set'.ucfirst(self::camelCase($name));
+                $fields[$name]['name'] = self::camelCase($name);
+                $fields[$name]['apiName'] = $apiName;
+                $fields[$name]['customfield'] = $ZCRMfield->isCustomField();
+                $fields[$name]['req'] = $ZCRMfield->isMandatory();
+                $fields[$name]['type'] = $ZCRMfield->getDataType();
+                $fields[$name]['isreadonly'] = $ZCRMfield->isReadOnly();
+                $fields[$name]['maxlength']  = $ZCRMfield->getLength();
+                $fields[$name]['label']  = $ZCRMfield->getFieldLabel();
+                $fields[$name]['dv']  = $ZCRMfield->getDefaultValue();
+                $fields[$name]['system'] = $system;
+                $fields[$name]['lookupModuleName'] = $lookupModuleName;
+            }
         }
 
         $class->setMethod(PhpMethod::create('getModule')->setBody('return '.var_export($moduleName, true).';'));
