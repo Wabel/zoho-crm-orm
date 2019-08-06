@@ -189,6 +189,8 @@ class EntitiesGeneratorService
                 $nullable = true;
                 break;
             case 'ownerlookup':
+                $isLookup = true;
+                $lookupName = self::camelCase($name.'_OwnerName');
                 $name = self::camelCase($name.'_OwnerID');
                 $phpType = 'string';
                 break;
@@ -202,6 +204,8 @@ class EntitiesGeneratorService
                 continue 2;
                     break;
             case 'userlookup':
+                $isLookup = true;
+                $lookupName = self::camelCase($name.'_UserName');
                 $name = self::camelCase($name.'_UserID');
                 $phpType = 'string';
                 $nullable = true;
