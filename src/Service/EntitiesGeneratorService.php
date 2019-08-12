@@ -190,14 +190,14 @@ class EntitiesGeneratorService
                 break;
             case 'ownerlookup':
                 $isLookup = true;
-                $lookupName = self::camelCase($name.'_OwnerName');
-                $name = self::camelCase($name.'_OwnerID');
+                $lookupName = $name.'_OwnerName';
+                $name = $name.'_OwnerID';
                 $phpType = 'string';
                 break;
             case 'lookup':
                 $isLookup = true;
-                $lookupName = self::camelCase($name.'_Name');
-                $name = self::camelCase($name.'_ID');
+                $lookupName = $name.'_Name';
+                $name = $name.'_ID';
                 $phpType = 'string';
                 break;
             case 'multiselectlookup':
@@ -205,14 +205,14 @@ class EntitiesGeneratorService
                     break;
             case 'userlookup':
                 $isLookup = true;
-                $lookupName = self::camelCase($name.'_UserName');
-                $name = self::camelCase($name.'_UserID');
+                $lookupName = $name.'_UserName';
+                $name = $name.'_UserID';
                 $phpType = 'string';
                 $nullable = true;
                 break;
             case 'multiuserlookup':
                 //@Todo: It's a hypothetical field name based on zoho fields architecture
-                $name = self::camelCase($name.'_UserIDs');
+                $name = $name.'_UserIDs';
                 $phpType = 'string[]';
                 $nullable = true;
                 break;
@@ -265,12 +265,12 @@ class EntitiesGeneratorService
         self::registerProperty($class, 'createdTime', "The time the record was created in Zoho\nType: DateTimeImmutable\n", '\\DateTimeImmutable', true);
         self::registerProperty($class, 'modifiedTime', "The last time the record was modified in Zoho\nType: DateTimeImmutable\n", '\\DateTimeImmutable', true);
         self::registerProperty($class, 'lastActivityTime', "The last activity time the record or a related record was modified in Zoho\nType: DateTimeImmutable\n", '\\DateTimeImmutable', true);
-        self::registerProperty($class, 'createdByOwnerID', "The user id who created the entity in Zoho\nType: string\n", 'string');
-        self::registerProperty($class, 'modifiedByOwnerID', "The user id who modified the entity in Zoho\nType: string\n", 'string');
-        self::registerProperty($class, 'createdByOwnerName', "The user id who created the entity in Zoho\nType: string\n", 'string');
-        self::registerProperty($class, 'modifiedByOwnerName', "The user id who modified the entity in Zoho\nType: string\n", 'string');
-        self::registerProperty($class, 'ownerOwnerID', "Owner ID in Zoho: string\n", 'string');
-        self::registerProperty($class, 'ownerOwnerName', "Owner Name in Zoho: string\n", 'string');
+        self::registerProperty($class, 'createdBy_OwnerID', "The user id who created the entity in Zoho\nType: string\n", 'string');
+        self::registerProperty($class, 'modifiedBy_OwnerID', "The user id who modified the entity in Zoho\nType: string\n", 'string');
+        self::registerProperty($class, 'createdBy_OwnerName', "The user id who created the entity in Zoho\nType: string\n", 'string');
+        self::registerProperty($class, 'modifiedBy_OwnerName', "The user id who modified the entity in Zoho\nType: string\n", 'string');
+        self::registerProperty($class, 'owner_OwnerID', "Owner ID in Zoho: string\n", 'string');
+        self::registerProperty($class, 'owner_OwnerName', "Owner Name in Zoho: string\n", 'string');
         self::registerProperty($class, 'ZCRMRecord', "The Wrapped Zoho CRM Record\nType: ZCRMRecord\n", '\\zcrmsdk\\crm\\crud\\ZCRMRecord');
         $methodIsDirty = PhpMethod::create('isDirty');
         $methodIsDirty->setDescription('Returns whether a property is changed or not.');
@@ -381,14 +381,14 @@ class EntitiesGeneratorService
                 break;
             case 'ownerlookup':
                 $isLookup = true;
-                $lookupName = self::camelCase($name.'_OwnerName');
-                $name = self::camelCase($name.'_OwnerID');
+                $lookupName = $name.'_OwnerName';
+                $name = $name.'_OwnerID';
                 $phpType = 'string';
                 break;
             case 'lookup':
                 $isLookup = true;
-                $lookupName = self::camelCase($name.'_Name');
-                $name = self::camelCase($name.'_ID');
+                $lookupName = $name.'_Name';
+                $name = $name.'_ID';
                 $phpType = 'string';
                 $lookupModuleName = $ZCRMfield->getLookupField() ? $ZCRMfield->getLookupField()->getModule():null;
                 break;
@@ -397,8 +397,8 @@ class EntitiesGeneratorService
                     break;
             case 'userlookup':
                 $isLookup = true;
-                $lookupName = self::camelCase($name.'_UserName');
-                $name = self::camelCase($name.'_UserID');
+                $lookupName = $name.'_UserName';
+                $name = $name.'_UserID';
                 $phpType = 'string';
                 break;
             case 'multiuserlookup':
@@ -422,7 +422,7 @@ class EntitiesGeneratorService
             $fields[$name]['phpType'] = $phpType;
             $fields[$name]['getter'] = 'get'.ucfirst(self::camelCase($name));
             $fields[$name]['setter'] = 'set'.ucfirst(self::camelCase($name));
-            $fields[$name]['name'] = self::camelCase($name);
+            $fields[$name]['name'] = $name;
             $fields[$name]['apiName'] = $apiName;
             $fields[$name]['customfield'] = $ZCRMfield->isCustomField();
             $fields[$name]['req'] = $ZCRMfield->isMandatory();
@@ -440,7 +440,7 @@ class EntitiesGeneratorService
                 $fields[$name]['phpType'] = $phpType;
                 $fields[$name]['getter'] = 'get'.ucfirst(self::camelCase($name));
                 $fields[$name]['setter'] = 'set'.ucfirst(self::camelCase($name));
-                $fields[$name]['name'] = self::camelCase($name);
+                $fields[$name]['name'] = $name;
                 $fields[$name]['apiName'] = $apiName;
                 $fields[$name]['customfield'] = $ZCRMfield->isCustomField();
                 $fields[$name]['req'] = $ZCRMfield->isMandatory();

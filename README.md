@@ -14,8 +14,10 @@ Note: As we do our best to not break BC with version 2.1, please check your appl
 Basically, in the v2 of the Zoho API, when we get the list of fields, we retrieve a `jsonobject` for the lookup fields (`ownerlookup`, `userlookup`, `lookup`, etc.).  
 In the 2.1, we only generate the Id of those objects, the 2.2 will also generate the name of the linked object.
 
-Ex: You create a field `ParentAccount` in the Module `Accounts`, then, instead of having only `get/setParentAccountID()`, we also generate `get/setParentAccountName()`.  
+Ex: You create a field `ParentAccount` in the Module `Accounts`, then, instead of having only `get/setParentAccountID()`, we also generate `get/setParentAccount_Name()`.  
 The records fetched from Zoho will also be populated in the right methods (`id/name`).
+
+The fields are generated using `_ID` and `_Name` for `lookup`, and `_OwnerID` and `_OwnerName` for `ownerlookup`.
 
 
 What is this?
