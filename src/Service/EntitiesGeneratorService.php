@@ -188,10 +188,6 @@ class EntitiesGeneratorService
                 case 'boolean':
                     $phpType = 'bool';
                     break;
-                case 'bigint':
-                case 'integer':
-                    $phpType = 'int';
-                    break;
                 case 'autonumber':
                 case 'bigint':
                 case 'integer':
@@ -360,7 +356,7 @@ class EntitiesGeneratorService
 
         $fields = [];
         foreach ($ZCRMfields as $ZCRMfield) {
-            $name = $ZCRMfield->getApiName();
+            $name = self::camelCase($ZCRMfield->getApiName());
             $apiName = $ZCRMfield->getApiName();
             $type = $ZCRMfield->getDataType();
             $system = false;
@@ -379,10 +375,6 @@ class EntitiesGeneratorService
                     break;
                 case 'boolean':
                     $phpType = 'bool';
-                    break;
-                case 'bigint':
-                case 'integer':
-                    $phpType = 'int';
                     break;
                 case 'autonumber':
                 case 'bigint':
