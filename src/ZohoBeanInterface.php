@@ -50,50 +50,50 @@ interface ZohoBeanInterface
     /**
      * @return string  User ID who created the entity  in Zoho
      */
-    public function getCreatedByOwnerID();
+    public function getCreatedBy_OwnerID();
 
     /**
      * Sets the  User ID who created the entity in Zoho.
      *
      * @param string $createdByID
      */
-    public function setCreatedByOwnerID($createdByID);
+    public function setCreatedBy_OwnerID($createdByID);
 
     /**
      * @return string  User ID who modified the entity  in Zoho
      */
-    public function getModifiedByOwnerID();
+    public function getModifiedBy_OwnerID();
 
     /**
      * Sets the  User ID who modified the entity in Zoho.
      *
      * @param string $modifiedByID
      */
-    public function setModifiedByOwnerID($modifiedByID);
+    public function setModifiedBy_OwnerID($modifiedByID);
 
     /**
      * @return string the User name who created the entity in Zoho
      */
-    public function getCreatedByOwnerName();
+    public function getCreatedBy_OwnerName();
 
     /**
      * Sets the  User name who created the entity in Zoho.
      *
      * @param string $name
      */
-    public function setCreatedByOwnerName($name);
+    public function setCreatedBy_OwnerName($name);
 
     /**
      * @return string the User name who modified the entity in Zoho
      */
-    public function getModifiedByOwnerName();
+    public function getModifiedBy_OwnerName();
 
     /**
      * Sets the User name who modified the entity in Zoho
      *
      * @param string $name
      */
-    public function setModifiedByOwnerName($name);
+    public function setModifiedBy_OwnerName($name);
 
 
     /**
@@ -112,26 +112,26 @@ interface ZohoBeanInterface
     /**
      * @return string the Owner ID in Zoho
      */
-    public function getOwnerOwnerID();
+    public function getOwner_OwnerID();
 
     /**
      * Sets the  Owner ID in Zoho.
      *
      * @param string $ownerID
      */
-    public function setOwnerOwnerID($ownerID);
+    public function setOwner_OwnerID($ownerID);
 
     /**
      * @return string the Owner name in Zoho
      */
-    public function getOwnerOwnerName();
+    public function getOwner_OwnerName();
 
     /**
      * Sets the  Owner name in Zoho.
      *
      * @param string $name
      */
-    public function setOwnerOwnerName($name);
+    public function setOwner_OwnerName($name);
 
     /**
      * Returns the wrapped Zoho CRM Record .

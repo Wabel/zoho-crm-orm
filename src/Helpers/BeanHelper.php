@@ -57,7 +57,7 @@ class BeanHelper
                 break;
             case 'ownerlookup':
                 if($bean->{$getter}()) {
-                    $bean->getZCRMRecord()->setOwner(ZCRMUser::getInstance($bean->{$getter}(), $bean->getOwnerOwnerName()));
+                    $bean->getZCRMRecord()->setOwner(ZCRMUser::getInstance($bean->{$getter}(), $bean->getOwner_OwnerName()));
                 }
                 break;
             case 'multiselectpicklist':
@@ -94,17 +94,17 @@ class BeanHelper
         $bean->setModifiedTime(!empty($record->getModifiedTime()) ? \DateTimeImmutable::createFromFormat(\DateTime::ATOM, $record->getModifiedTime()) : null);
         $bean->setLastActivityTime(!empty($record->getLastActivityTime()) ? \DateTimeImmutable::createFromFormat(\DateTime::ATOM, $record->getLastActivityTime()) : null);
 
-        if($record->getOwner()) { $bean->setOwnerOwnerID($record->getOwner()->getId());
+        if($record->getOwner()) { $bean->setOwner_OwnerID($record->getOwner()->getId());
         }
-        if($record->getOwner()) { $bean->setOwnerOwnerName($record->getOwner()->getName());
+        if($record->getOwner()) { $bean->setOwner_OwnerName($record->getOwner()->getName());
         }
-        if($record->getModifiedBy()) { $bean->setModifiedByOwnerID($record->getModifiedBy()->getId());
+        if($record->getModifiedBy()) { $bean->setModifiedBy_OwnerID($record->getModifiedBy()->getId());
         }
-        if($record->getModifiedBy()) { $bean->setModifiedByOwnerName($record->getModifiedBy()->getName());
+        if($record->getModifiedBy()) { $bean->setModifiedBy_OwnerName($record->getModifiedBy()->getName());
         }
-        if($record->getCreatedBy()) { $bean->setCreatedByOwnerID($record->getCreatedBy()->getId());
+        if($record->getCreatedBy()) { $bean->setCreatedBy_OwnerID($record->getCreatedBy()->getId());
         }
-        if($record->getCreatedBy()) { $bean->setCreatedByOwnerName($record->getCreatedBy()->getName());
+        if($record->getCreatedBy()) { $bean->setCreatedBy_OwnerName($record->getCreatedBy()->getName());
         }
 
         $fields = $dao->getFields();

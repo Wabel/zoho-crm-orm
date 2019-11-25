@@ -436,8 +436,8 @@ class EntitiesGeneratorService
             }
 
             $fields[$name]['phpType'] = $phpType;
-            $fields[$name]['getter'] = 'get' . ucfirst(self::camelCase($name));
-            $fields[$name]['setter'] = 'set' . ucfirst(self::camelCase($name));
+            $fields[$name]['getter'] = 'get' . ucfirst($name);
+            $fields[$name]['setter'] = 'set' . ucfirst($name);
             $fields[$name]['name'] = $name;
             $fields[$name]['apiName'] = $apiName;
             $fields[$name]['customfield'] = $ZCRMfield->isCustomField();
@@ -454,8 +454,8 @@ class EntitiesGeneratorService
             if ($isLookup) {
                 $name = $lookupName;
                 $fields[$name]['phpType'] = $phpType;
-                $fields[$name]['getter'] = 'get' . ucfirst(self::camelCase($name));
-                $fields[$name]['setter'] = 'set' . ucfirst(self::camelCase($name));
+                $fields[$name]['getter'] = 'get' . ucfirst($name);
+                $fields[$name]['setter'] = 'set' . ucfirst($name);
                 $fields[$name]['name'] = $name;
                 $fields[$name]['apiName'] = $apiName;
                 $fields[$name]['customfield'] = $ZCRMfield->isCustomField();
