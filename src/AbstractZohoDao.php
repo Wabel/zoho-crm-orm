@@ -180,7 +180,7 @@ abstract class AbstractZohoDao
     {
         try{
             $ZCRMRecords =  ZCRMModuleHelper::getAllZCRMRecordsFromPagination($this->zohoClient, $this->getModule(),
-                $cvId, $sortColumnString, $sortOrderString, $page, $perPage, $lastModifiedTime);
+                $cvId, $sortColumnString, $sortOrderString, $page, $perPage, $lastModifiedTime, $this->zohoClient->getLogger());
         } catch(\ZCRMException $exception){
             if(ExceptionZohoClient::exceptionCodeFormat($exception->getExceptionCode()) === ExceptionZohoClient::EXCEPTION_CODE_NO__CONTENT) {
                 $ZCRMRecords = [];
