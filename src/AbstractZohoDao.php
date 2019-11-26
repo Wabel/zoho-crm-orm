@@ -203,7 +203,7 @@ abstract class AbstractZohoDao
      */
     public function getDeletedRecordIds(\DateTimeInterface $lastModifiedTime = null, $page = 1, $perPage = 200)
     {
-        return ZCRMModuleHelper::getAllZCRMTrashRecordsFromPagination($this->zohoClient, $this->getModule(), 'all', $lastModifiedTime, $page, $perPage);
+        return ZCRMModuleHelper::getAllZCRMTrashRecordsFromPagination($this->zohoClient, $this->getModule(), 'all', $lastModifiedTime, $page, $perPage, $this->zohoClient->getLogger());
     }
 
     /**
