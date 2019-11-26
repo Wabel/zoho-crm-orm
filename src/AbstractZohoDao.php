@@ -11,6 +11,7 @@ use Wabel\Zoho\CRM\Helpers\ZCRMModuleHelper;
 use zcrmsdk\crm\crud\ZCRMRecord;
 use zcrmsdk\crm\crud\ZCRMModule;
 use zcrmsdk\crm\api\response\EntityResponse;
+use zcrmsdk\crm\exception\ZCRMException;
 
 /**
  * Base class that provides access to Zoho through Zoho beans.
@@ -174,14 +175,14 @@ abstract class AbstractZohoDao
      * @param  int            $perPage
      * @return ZohoBeanInterface[]
      * @throws ZohoCRMORMException
-     * @throws \ZCRMException
+     * @throws ZCRMException
      */
     public function getRecords($cvId = null, $sortColumnString = null, $sortOrderString = null, \DateTime $lastModifiedTime = null, $page = 1, $perPage = 200): array
     {
         try{
             $ZCRMRecords =  ZCRMModuleHelper::getAllZCRMRecordsFromPagination($this->zohoClient, $this->getModule(),
                 $cvId, $sortColumnString, $sortOrderString, $page, $perPage, $lastModifiedTime, $this->zohoClient->getLogger());
-        } catch(\ZCRMException $exception){
+        } catch(ZCRMException $exception){
             if(ExceptionZohoClient::exceptionCodeFormat($exception->getExceptionCode()) === ExceptionZohoClient::EXCEPTION_CODE_NO__CONTENT) {
                 $ZCRMRecords = [];
             } else{
