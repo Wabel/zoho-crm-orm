@@ -114,8 +114,8 @@ abstract class AbstractZohoDao
         foreach ($ZCRMRecords as $record) {
 
             /**
- * @var ZohoBeanInterface $bean 
-*/
+             * @var ZohoBeanInterface $bean
+             */
             $bean = new $beanClass();
             BeanHelper::updateZCRMRecordToBean($this, $bean, $record);
             $beanArray[] = $bean;
@@ -157,11 +157,11 @@ abstract class AbstractZohoDao
      */
     public function getById($id): ZohoBeanInterface
     {
-            $module = $this->getModule();
-            $ZCRMRecord = $this->zohoClient->getRecordById($module, $id);
-            $beans =  $this->getBeansFromZCRMRecords([$ZCRMRecord]);
+        $module = $this->getModule();
+        $ZCRMRecord = $this->zohoClient->getRecordById($module, $id);
+        $beans =  $this->getBeansFromZCRMRecords([$ZCRMRecord]);
 
-            return $beans[0];
+        return $beans[0];
     }
 
     /**
@@ -177,11 +177,11 @@ abstract class AbstractZohoDao
      * @throws ZohoCRMORMException
      * @throws ZCRMException
      */
-    public function getRecords($cvId = null, $sortColumnString = null, $sortOrderString = null, \DateTime $lastModifiedTime = null, $page = 1, $perPage = 200): array
+    public function getRecords($cvId = null, $sortColumnString = null, $sortOrderString = null, \DateTime $lastModifiedTime = null, $page = 1, $perPage = 200, bool &$stopLoopAndHasMoreResults = null): array
     {
         try{
             $ZCRMRecords =  ZCRMModuleHelper::getAllZCRMRecordsFromPagination($this->zohoClient, $this->getModule(),
-                $cvId, $sortColumnString, $sortOrderString, $page, $perPage, $lastModifiedTime, $this->zohoClient->getLogger());
+                $cvId, $sortColumnString, $sortOrderString, $page, $perPage, $lastModifiedTime, $this->zohoClient->getLogger(), $stopLoopAndHasMoreResults);
         } catch(ZCRMException $exception){
             if(ExceptionZohoClient::exceptionCodeFormat($exception->getExceptionCode()) === ExceptionZohoClient::EXCEPTION_CODE_NO__CONTENT) {
                 $ZCRMRecords = [];
@@ -202,9 +202,9 @@ abstract class AbstractZohoDao
      * @return \ZCRMTrashRecord[]
      * @throws \ZCRMException
      */
-    public function getDeletedRecordIds(\DateTimeInterface $lastModifiedTime = null, $page = 1, $perPage = 200)
+    public function getDeletedRecordIds(\DateTimeInterface $lastModifiedTime = null, $page = 1, $perPage = 200, bool &$stopLoopAndHasMoreResults = null)
     {
-        return ZCRMModuleHelper::getAllZCRMTrashRecordsFromPagination($this->zohoClient, $this->getModule(), 'all', $lastModifiedTime, $page, $perPage, $this->zohoClient->getLogger());
+        return ZCRMModuleHelper::getAllZCRMTrashRecordsFromPagination($this->zohoClient, $this->getModule(), 'all', $lastModifiedTime, $page, $perPage, $this->zohoClient->getLogger(), $stopLoopAndHasMoreResults);
     }
 
     /**
@@ -255,21 +255,21 @@ abstract class AbstractZohoDao
             );
             $records = array_merge($records, $recordsToMerge);
             switch ($action){
-            case 'insert':
-                 $responses = $this->zohoClient->insertRecords($this->getModule(), $records, $wfTrigger);
-                break;
-            case 'update':
-                $responses = $this->zohoClient->updateRecords($this->getModule(), $records, $wfTrigger);
-                break;
-            case 'upsert':
-            default:
-                $responses = $this->zohoClient->upsertRecords($this->getModule(), $records);
+                case 'insert':
+                    $responses = $this->zohoClient->insertRecords($this->getModule(), $records, $wfTrigger);
+                    break;
+                case 'update':
+                    $responses = $this->zohoClient->updateRecords($this->getModule(), $records, $wfTrigger);
+                    break;
+                case 'upsert':
+                default:
+                    $responses = $this->zohoClient->upsertRecords($this->getModule(), $records);
             }
         }
         if ($this->isLogResponses()) {
-          foreach ( $responses as $response ) {
-            $this->getZohoClient()->getLogger()->debug( json_encode( $response->getResponseJSON(), JSON_PRETTY_PRINT ) );
-          }
+            foreach ( $responses as $response ) {
+                $this->getZohoClient()->getLogger()->debug( json_encode( $response->getResponseJSON(), JSON_PRETTY_PRINT ) );
+            }
         }
         if (count($records) != count($beans)) {
             throw new ZohoCRMORMException('Error while '.$processAction.' beans in Zoho. '.count($beans).' passed in parameter, but '.count($records).' returned.');
@@ -384,8 +384,8 @@ abstract class AbstractZohoDao
         $field = array_values(
             array_filter(
                 $fields, function (Field $fiedObj) use ($fieldName) {
-                    return $fiedObj->getName() === $fieldName;
-                }
+                return $fiedObj->getName() === $fieldName;
+            }
             )
         );
 
