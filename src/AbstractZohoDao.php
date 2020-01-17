@@ -219,7 +219,7 @@ abstract class AbstractZohoDao
      * Implements insertRecords or updateRecords or upsertRecords API method.
      *
      * @param ZohoBeanInterface[] $beans
-     * @param bool                $wfTrigger Whether or not the call should
+     * @param string[]                $wfTrigger Whether or not the call should
      *                                       trigger the workflows related to a
      *                                       "created" event
      * @param string              $action
@@ -228,7 +228,7 @@ abstract class AbstractZohoDao
      * @throws \Wabel\Zoho\CRM\Exceptions\ZohoCRMORMException
      * @throws \zcrmsdk\crm\exception\ZCRMException
      */
-    public function createOrUpdate( array $beans, bool $wfTrigger = false, $action = 'upsert'): array
+    public function createOrUpdate( array $beans, array $wfTrigger = [], $action = 'upsert'): array
     {
         /**
          * @var $records ZCRMRecord[]
@@ -286,7 +286,7 @@ abstract class AbstractZohoDao
      * Implements insertRecords API method.
      *
      * @param ZohoBeanInterface[] $beans
-     * @param bool                $wfTrigger Whether or not the call should
+     * @param string[]                $wfTrigger Whether or not the call should
      *                                       trigger the workflows related to a
      *                                       "created" event
      *
@@ -294,7 +294,7 @@ abstract class AbstractZohoDao
      * @throws ZohoCRMORMException
      * @throws \zcrmsdk\crm\exception\ZCRMException
      */
-    public function insertRecords( array $beans, bool $wfTrigger = false): array
+    public function insertRecords( array $beans, array $wfTrigger = []): array
     {
         return $this->createOrUpdate($beans, $wfTrigger, 'insert');
     }
@@ -303,13 +303,13 @@ abstract class AbstractZohoDao
      * Implements updateRecords API method.
      *
      * @param ZohoBeanInterface[] $beans
-     * @param bool                $wfTrigger
+     * @param string[]                $wfTrigger
      *
      * @return array
      * @throws ZohoCRMORMException
      * @throws \zcrmsdk\crm\exception\ZCRMException
      */
-    public function updateRecords(array $beans, bool $wfTrigger = false): array
+    public function updateRecords(array $beans, array $wfTrigger = []): array
     {
         return $this->createOrUpdate($beans, $wfTrigger, 'update');
     }
@@ -322,13 +322,13 @@ abstract class AbstractZohoDao
      *
      * @param ZohoBeanInterface|ZohoBeanInterface[] $beans A bean or an array
      *                                                     of beans.
-     * @param bool                                  $wfTrigger
+     * @param string[]                                  $wfTrigger
      *
      * @return array
      * @throws ZohoCRMORMException
      * @throws \zcrmsdk\crm\exception\ZCRMException
      */
-    public function save( $beans, $wfTrigger = false ): array
+    public function save( $beans, array $wfTrigger = [] ): array
     {
 
         if (!is_array($beans)) {
