@@ -9,6 +9,15 @@ Heavily forked from [mctekk's work](https://github.com/mctekk/zohocrm)
 
 Version 2.2
 ---------------  
+
+**2.2.3**
+
+_24 Mar. 2020_
+
+If the records contains tags, the tags are now saved in the bean, values separated by semi-colons (ex: tag1;tag2;tag3).
+
+**2.2.2**
+
 Note: As we do our best to not break BC with version 2.1, please check your application after using the 2.2.
 
 Basically, in the v2 of the Zoho API, when we get the list of fields, we retrieve a `jsonobject` for the lookup fields (`ownerlookup`, `userlookup`, `lookup`, etc.).  

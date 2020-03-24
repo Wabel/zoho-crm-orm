@@ -29,47 +29,47 @@ class BeanHelper
             }
             $getter = $field->getGetter();
             switch ($field->getType()) {
-            case 'date':
-                /**
-                 * @var $date \DateTimeInterface
-                 */
-                $date = $bean->{$getter}();
-                if($date) {
-                    $bean->getZCRMRecord()->setFieldValue($field->getApiName(), $date->format('Y-m-d'));
-                }
-                break;
-            case 'datetime':
-                /**
-                 * @var $date \DateTimeInterface
-                 */
-                $date = $bean->{$getter}();
-                if($date) {
-                    $date->setTimezone(new \DateTimeZone($dao->getZohoClient()->getTimezone()));
-                    $bean->getZCRMRecord()->setFieldValue($field->getApiName(), $date->format(\DateTime::ATOM));
-                }
-                break;
-            case 'lookup':
-                /**
-                 * @var $ZCRMRecord ZCRMRecord
-                 */
-                $ZCRMRecord = ZCRMRecord::getInstance($field->getLookupModuleName(), $bean->{$getter}());
-                $bean->getZCRMRecord()->setFieldValue($field->getApiName(), $ZCRMRecord);
-                break;
-            case 'ownerlookup':
-                if($bean->{$getter}()) {
-                    $bean->getZCRMRecord()->setOwner(ZCRMUser::getInstance($bean->{$getter}(), $bean->getOwner_OwnerName()));
-                }
-                break;
-            case 'multiselectpicklist':
-                if($bean->{$getter}()) {
+                case 'date':
+                    /**
+                     * @var $date \DateTimeInterface
+                     */
+                    $date = $bean->{$getter}();
+                    if($date) {
+                        $bean->getZCRMRecord()->setFieldValue($field->getApiName(), $date->format('Y-m-d'));
+                    }
+                    break;
+                case 'datetime':
+                    /**
+                     * @var $date \DateTimeInterface
+                     */
+                    $date = $bean->{$getter}();
+                    if($date) {
+                        $date->setTimezone(new \DateTimeZone($dao->getZohoClient()->getTimezone()));
+                        $bean->getZCRMRecord()->setFieldValue($field->getApiName(), $date->format(\DateTime::ATOM));
+                    }
+                    break;
+                case 'lookup':
+                    /**
+                     * @var $ZCRMRecord ZCRMRecord
+                     */
+                    $ZCRMRecord = ZCRMRecord::getInstance($field->getLookupModuleName(), $bean->{$getter}());
+                    $bean->getZCRMRecord()->setFieldValue($field->getApiName(), $ZCRMRecord);
+                    break;
+                case 'ownerlookup':
+                    if($bean->{$getter}()) {
+                        $bean->getZCRMRecord()->setOwner(ZCRMUser::getInstance($bean->{$getter}(), $bean->getOwner_OwnerName()));
+                    }
+                    break;
+                case 'multiselectpicklist':
+                    if($bean->{$getter}()) {
+                        $bean->getZCRMRecord()->setFieldValue($field->getApiName(), $bean->{$getter}());
+                    } else{
+                        $bean->getZCRMRecord()->setFieldValue($field->getApiName(), null);
+                    }
+                    break;
+                default:
                     $bean->getZCRMRecord()->setFieldValue($field->getApiName(), $bean->{$getter}());
-                } else{
-                    $bean->getZCRMRecord()->setFieldValue($field->getApiName(), null);
-                }
-                break;
-            default:
-                $bean->getZCRMRecord()->setFieldValue($field->getApiName(), $bean->{$getter}());
-                break;
+                    break;
             }
         }
 
@@ -113,65 +113,76 @@ class BeanHelper
                 $value = $record->getFieldValue($field->getApiName());
                 $setter = $field->getSetter();
                 switch ($field->getType()) {
-                case 'date':
-                    if ($value && $dateObj = \DateTime::createFromFormat('M/d/Y', $value)) {
-                        $value = $dateObj;
-                    } elseif ($value && $dateObj = \DateTime::createFromFormat('Y-m-d', $value)) {
-                        $value = $dateObj;
-                    } elseif ($value && $dateObj = \DateTime::createFromFormat(\DateTime::ATOM, $value)) {
-                        $value = $dateObj;
-                    } elseif($value !== null) {
-                        throw new ZohoCRMORMException('Unable to convert the Date field "' . $field->getName() . "\" into a DateTime PHP object from the the record $id of the module " . $dao->getModule() . '.');
-                    }
-                    break;
-                case 'datetime':
-                    $value = \DateTime::createFromFormat(\DateTime::ATOM, $value);
-                    break;
-                case 'userlookup':
-                case 'lookup':
-                    if ($value) {
-                        if (is_a($value, 'zcrmsdk\crm\crud\ZCRMRecord')) {
-                            /**
-                             * @var $ZCRMRecord ZCRMRecord
-                             */
-                            $ZCRMRecord = $value;
-                            if (UtilsHelper::endsWith($field->getName(), 'ID')) {
-                                $value = $ZCRMRecord->getEntityId();
-                            } else {
-                                $value = $ZCRMRecord->getLookupLabel();
-                            }
+                    case 'date':
+                        if ($value && $dateObj = \DateTime::createFromFormat('M/d/Y', $value)) {
+                            $value = $dateObj;
+                        } elseif ($value && $dateObj = \DateTime::createFromFormat('Y-m-d', $value)) {
+                            $value = $dateObj;
+                        } elseif ($value && $dateObj = \DateTime::createFromFormat(\DateTime::ATOM, $value)) {
+                            $value = $dateObj;
+                        } elseif($value !== null) {
+                            throw new ZohoCRMORMException('Unable to convert the Date field "' . $field->getName() . "\" into a DateTime PHP object from the the record $id of the module " . $dao->getModule() . '.');
                         }
-                    } else {
-                        $value = null;
-                    }
-                    break;
+                        break;
+                    case 'datetime':
+                        $value = \DateTime::createFromFormat(\DateTime::ATOM, $value);
+                        break;
+                    case 'userlookup':
+                    case 'lookup':
+                        if ($value) {
+                            if (is_a($value, 'zcrmsdk\crm\crud\ZCRMRecord')) {
+                                /**
+                                 * @var $ZCRMRecord ZCRMRecord
+                                 */
+                                $ZCRMRecord = $value;
+                                if (UtilsHelper::endsWith($field->getName(), 'ID')) {
+                                    $value = $ZCRMRecord->getEntityId();
+                                } else {
+                                    $value = $ZCRMRecord->getLookupLabel();
+                                }
+                            }
+                        } else {
+                            $value = null;
+                        }
+                        break;
 
-                case 'ownerlookup':
-                    if ($value) {
-                        if (is_a($value, 'zcrmsdk\crm\setup\users\ZCRMUser')) {
-                            /**
-                             * @var $ZCRMUser ZCRMUser
-                             */
-                            $ZCRMUser = $value;
-                            if (UtilsHelper::endsWith($field->getName(), 'ID')) {
-                                $value = $ZCRMUser->getId();
-                            } else {
-                                $value = $ZCRMUser->getFullName();
+                    case 'ownerlookup':
+                        if ($value) {
+                            if (is_a($value, 'zcrmsdk\crm\setup\users\ZCRMUser')) {
+                                /**
+                                 * @var $ZCRMUser ZCRMUser
+                                 */
+                                $ZCRMUser = $value;
+                                if (UtilsHelper::endsWith($field->getName(), 'ID')) {
+                                    $value = $ZCRMUser->getId();
+                                } else {
+                                    $value = $ZCRMUser->getFullName();
+                                }
                             }
+                        } else {
+                            $value = null;
                         }
-                    } else {
-                        $value = null;
-                    }
-                    break;
-                default:
-                    break;
+                        break;
+                    default:
+                        break;
                 }
                 if (($value === false || $value === null) && in_array($field->getType(), ['date', 'datetime', ''])) {
                     $value = null;
                 }
+
                 $bean->$setter($value);
                 $bean->setDirty($field->getName(), false);
             }
+        }
+
+        if (method_exists($bean, 'setTag')) {
+            $tags = [];
+            if (count($record->getTags())) {
+                foreach ($record->getTags() as $tag) {
+                    $tags[] = $tag->getId();
+                }
+            }
+            $bean->setTag(count($tags) ? implode(';', $tags) : null);
         }
 
     }
